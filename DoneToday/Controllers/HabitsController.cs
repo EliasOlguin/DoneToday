@@ -281,4 +281,80 @@ public class HabitsController : ControllerBase
 
         return Ok(response);
     }
+    [HttpPost("{id:int}/complete")]
+    public async Task<IActionResult> CompleteHabit(int id)
+    {
+        const int userId = 1;
+
+        var habit = await _context.Habits
+            .Include(h => h.Schedules)
+            .FirstOrDefaultAsync(h =>
+                h.Id == id &&
+                h.UserId == userId &&
+                !h.IsArchived);
+
+        if (habit is null)
+        {
+            return NotFound();
+        }
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        var alreadyCompleted = await _context.HabitCompletions
+            .AnyAsync(c =>
+                c.HabitId == id &&
+                c.Date == today);
+
+        if (alreadyCompleted)
+        {
+            return Conflict("Habit already completed today.");
+        }
+
+        var completion = new HabitCompletion
+        {
+            HabitId = id,
+            Date = today,
+            CompletedAt = DateTimeOffset.UtcNow
+        };
+
+        _context.HabitCompletions.Add(completion);
+
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+    [HttpDelete("{id:int}/complete")]
+    public async Task<IActionResult> UndoCompletion(int id)
+    {
+        const int userId = 1;
+
+        var habit = await _context.Habits
+            .FirstOrDefaultAsync(h =>
+                h.Id == id &&
+                h.UserId == userId &&
+                !h.IsArchived);
+
+        if (habit is null)
+        {
+            return NotFound();
+        }
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        var completion = await _context.HabitCompletions
+            .FirstOrDefaultAsync(c =>
+                c.HabitId == id &&
+                c.Date == today);
+
+        if (completion is null)
+        {
+            return NotFound();
+        }
+
+        _context.HabitCompletions.Remove(completion);
+
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
 }
