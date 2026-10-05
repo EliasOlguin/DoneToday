@@ -46,7 +46,8 @@ public class TodayController : ControllerBase
                 Name = h.Name,
                 Color = h.Color,
                 IsCompleted = h.Completions.Any(c => c.Date == today),
-                CurrentStreak = _streakService.CalculateCurrentStreak(h, today)
+                CurrentStreak = _streakService.CalculateCurrentStreak(h, today),
+                BestStreak = _streakService.CalculateBestStreak(h)
             })
             .ToList();
 

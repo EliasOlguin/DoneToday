@@ -9,5 +9,8 @@ public class TodayHabitResponse
     public string? Color { get; set; }
 
     public bool IsCompleted { get; set; }
+
     public int CurrentStreak { get; set; }
+
+    public int BestStreak { get; set; }
 }
