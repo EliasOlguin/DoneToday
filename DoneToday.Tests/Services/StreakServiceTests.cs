@@ -264,4 +264,37 @@ public class StreakServiceTests
 
         Assert.Equal(0, result);
     }
+    [Fact]
+    public void Returns2_WhenAllScheduledDaysSinceCreationAreCompleted()
+    {
+        var service = new StreakService();
+
+        var habit = new Habit
+        {
+            Schedules =
+            [
+                new()
+            {
+                DayOfWeek = DayOfWeek.Monday,
+                ValidFrom = new DateOnly(2026, 9, 28)
+            },
+            new()
+            {
+                DayOfWeek = DayOfWeek.Tuesday,
+                ValidFrom = new DateOnly(2026, 9, 28)
+            }
+            ],
+            Completions =
+            [
+                new() { Date = new DateOnly(2026, 9, 28) },
+            new() { Date = new DateOnly(2026, 9, 29) }
+            ]
+        };
+
+        var today = new DateOnly(2026, 9, 29);
+
+        var result = service.CalculateCurrentStreak(habit, today);
+
+        Assert.Equal(2, result);
+    }
 }

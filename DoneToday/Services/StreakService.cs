@@ -9,7 +9,12 @@ public class StreakService
         var schedules = habit.Schedules
             .OrderByDescending(s => s.ValidFrom)
             .ToList();
+        if (schedules.Count == 0)
+        {
+            return 0;
+        }
 
+        var firstScheduledDate = schedules.Min(s => s.ValidFrom);
         var completions = habit.Completions
             .Select(c => c.Date)
             .ToHashSet();
@@ -27,7 +32,7 @@ public class StreakService
             currentDate = today.AddDays(-1);
         }
 
-        while (true)
+        while (currentDate >= firstScheduledDate)
         {
             var scheduleExists = schedules.Any(s =>
                 s.DayOfWeek == currentDate.DayOfWeek &&
