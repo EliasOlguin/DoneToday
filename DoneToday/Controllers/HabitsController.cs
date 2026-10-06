@@ -4,6 +4,7 @@ using DoneToday.Api.Entities;
 using DoneToday.Dtos.Habits;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using DoneToday.Api.Services;
 
 namespace DoneToday.Api.Controllers;
 
@@ -156,34 +157,8 @@ public class HabitsController : ControllerBase
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        var activeSchedules = habit.Schedules
-            .Where(s => s.ValidTo == null)
-            .ToList();
-
-        foreach (var schedule in activeSchedules)
-        {
-            schedule.ValidTo = today;
-        }
-        var newSchedules = request.DaysOfWeek
-            .Distinct()
-            .Select(day => new HabitSchedule
-            {
-                HabitId = habit.Id,
-                DayOfWeek = day,
-                ValidFrom = today.AddDays(1),
-                ValidTo = null
-            })
-            .ToList();
-
-        _context.HabitSchedules.AddRange(newSchedules);
-
-        habit.Schedules = request.DaysOfWeek
-            .Distinct()
-            .Select(day => new HabitSchedule
-            {
-                DayOfWeek = day
-            })
-            .ToList();
+        var removedSchedules = HabitScheduleService.Update(habit, request.DaysOfWeek, today);
+        _context.HabitSchedules.RemoveRange(removedSchedules);
 
         await _context.SaveChangesAsync();
 
@@ -203,6 +178,29 @@ public class HabitsController : ControllerBase
 
         return Ok(response);
     }
+    [HttpGet("{id:int}/detail")]
+    public async Task<ActionResult<HabitDetailResponse>> GetHabitDetail(int id,
+        [FromServices] StreakService streakService)
+    {
+        const int userId = 1;
+        var habit = await _context.Habits.AsNoTracking()
+            .Include(h => h.Schedules).Include(h => h.Completions)
+            .FirstOrDefaultAsync(h => h.Id == id && h.UserId == userId && !h.IsArchived);
+        if (habit is null) return NotFound();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var active = habit.Schedules.Where(s => s.ValidTo == null).ToList();
+        return Ok(new HabitDetailResponse
+        {
+            Id = habit.Id, Name = habit.Name, Description = habit.Description,
+            Color = habit.Color, IsArchived = habit.IsArchived, CreatedAt = habit.CreatedAt,
+            DaysOfWeek = active.Select(s => s.DayOfWeek).ToList(),
+            ScheduleEffectiveFrom = active.Count == 0 ? null : active.Min(s => s.ValidFrom),
+            CurrentStreak = streakService.CalculateCurrentStreak(habit, today),
+            BestStreak = streakService.CalculateBestStreak(habit),
+            CompletionDates = habit.Completions.Select(c => c.Date).OrderDescending().ToList()
+        });
+    }
+
     [HttpPatch("{id:int}/archive")]
     public async Task<IActionResult> ArchiveHabit(int id)
     {

@@ -12,9 +12,15 @@ public class ProgressService
 
         var scheduledCount = 0;
         var completedCount = 0;
+        var days = Enumerable.Range(0, 7).Select(offset => new DailyProgressResult
+        {
+            Date = startOfWeek.AddDays(offset)
+        }).ToList();
+        var breakdown = new List<HabitProgressResult>();
 
         foreach (var habit in habits)
         {
+            var habitResult = new HabitProgressResult { Id = habit.Id, Name = habit.Name, Color = habit.Color };
             var completions = habit.Completions
                 .Select(c => c.Date)
                 .ToHashSet();
@@ -31,15 +37,22 @@ public class ProgressService
                 if (isScheduled)
                 {
                     scheduledCount++;
+                    habitResult.Scheduled++;
+                    var day = days[currentDate.DayNumber - startOfWeek.DayNumber];
+                    day.Scheduled++;
 
                     if (completions.Contains(currentDate))
                     {
                         completedCount++;
+                        habitResult.Completed++;
+                        day.Completed++;
                     }
                 }
 
                 currentDate = currentDate.AddDays(1);
             }
+            habitResult.CompletionRate = habitResult.Scheduled == 0 ? 0 : (double)habitResult.Completed / habitResult.Scheduled * 100;
+            breakdown.Add(habitResult);
         }
 
         var rate = scheduledCount == 0
@@ -50,7 +63,11 @@ public class ProgressService
         {
             Scheduled = scheduledCount,
             Completed = completedCount,
-            CompletionRate = rate
+            CompletionRate = rate,
+            StartDate = startOfWeek,
+            EndDate = today,
+            Days = days,
+            Habits = breakdown
         };
     }
 

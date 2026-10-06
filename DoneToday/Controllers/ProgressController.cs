@@ -47,7 +47,11 @@ public class ProgressController : ControllerBase
         {
             Scheduled = result.Scheduled,
             Completed = result.Completed,
-            CompletionRate = result.CompletionRate
+            CompletionRate = result.CompletionRate,
+            StartDate = result.StartDate,
+            EndDate = result.EndDate,
+            Days = result.Days,
+            Habits = result.Habits
         };
 
         return Ok(response);

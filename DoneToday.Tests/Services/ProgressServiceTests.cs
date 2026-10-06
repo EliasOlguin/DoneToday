@@ -6,6 +6,33 @@ namespace DoneToday.Tests.Services;
 public class ProgressServiceTests
 {
     [Fact]
+    public void Breakdown_RespectsHistoryAndExcludesFutureAndUnscheduledCompletions()
+    {
+        var today = new DateOnly(2026, 10, 6);
+        var habit = new Habit
+        {
+            Id = 7, Name = "Read",
+            Schedules = [
+                new() { DayOfWeek = DayOfWeek.Monday, ValidFrom = new DateOnly(2026, 10, 1), ValidTo = today },
+                new() { DayOfWeek = DayOfWeek.Wednesday, ValidFrom = today.AddDays(1) }
+            ],
+            Completions = [new() { Date = today.AddDays(-1) }, new() { Date = today }]
+        };
+        var result = new ProgressService().CalculateWeeklyProgress([habit], today);
+        Assert.Equal(1, result.Scheduled);
+        Assert.Equal(1, result.Completed);
+        Assert.Equal(7, result.Days.Count);
+        Assert.Equal(1, result.Days[0].Completed);
+        Assert.Equal(0, result.Days[1].Completed);
+        Assert.All(result.Days.Skip(2), day => Assert.Equal(0, day.Scheduled));
+        var breakdown = Assert.Single(result.Habits);
+        Assert.Equal(7, breakdown.Id);
+        Assert.Equal(100, breakdown.CompletionRate);
+        Assert.Equal(result.Completed, result.Days.Sum(d => d.Completed));
+        Assert.Equal(result.Scheduled, result.Habits.Sum(h => h.Scheduled));
+    }
+
+    [Fact]
     public void Returns75Percent_WhenThreeOfFourOccurrencesAreCompleted()
     {
         var service = new ProgressService();

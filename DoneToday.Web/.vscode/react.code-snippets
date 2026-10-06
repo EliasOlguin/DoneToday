@@ -1,0 +1,30 @@
+{
+  "React TypeScript component": {
+    "scope": "typescriptreact",
+    "prefix": "dtcomp",
+    "body": [
+      "export default function ${1:ComponentName}() {",
+      "  return (",
+      "    <div>",
+      "      $0",
+      "    </div>",
+      "  )",
+      "}"
+    ],
+    "description": "Create a React function component"
+  },
+  "React TypeScript component with props": {
+    "scope": "typescriptreact",
+    "prefix": "dtprops",
+    "body": [
+      "interface ${1:ComponentName}Props {",
+      "  ${2:title}: ${3:string}",
+      "}",
+      "",
+      "export default function ${1:ComponentName}({ ${2:title} }: ${1:ComponentName}Props) {",
+      "  return <div>{${2:title}}$0</div>",
+      "}"
+    ],
+    "description": "Create a React component with typed props"
+  }
+}
