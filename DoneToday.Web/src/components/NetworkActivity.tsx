@@ -3,9 +3,10 @@ import { useTranslation } from 'react-i18next'
 import { useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
 import Icon from './ui/Icon'
+import { isInitialRequest } from '../api/queryClient'
 
 export default function NetworkActivity({ children }: { children: ReactNode }) {
-  const fetching = useIsFetching()
+  const fetching = useIsFetching({ predicate: isInitialRequest })
   const mutating = useIsMutating()
   const { t } = useTranslation()
   const busy = fetching > 0 || mutating > 0
