@@ -13,9 +13,9 @@
 - Email confirmation required for local sign-in.
 - Optional authenticator-app two-factor authentication, including recovery codes.
 
-### Current stage: local email infrastructure
+### Current stage: registration and email confirmation
 
-User now extends IdentityUser<int> and AppDbContext extends IdentityDbContext<User, IdentityRole<int>, int>. The AddIdentityUsers migration is applied to the separate donetoday_auth database. Authentication endpoints and frontend login screens are not implemented yet; the old demo database is unchanged.
+User extends IdentityUser<int> and AppDbContext extends IdentityDbContext<User, IdentityRole<int>, int>. The AddIdentityUsers migration is applied to the separate donetoday_auth database. Registration, confirmation and resend endpoints are implemented, with English, Spanish and German screens. Login, logout, protected routes and authenticated habit ownership are implemented; the old demo database is unchanged.
 
 MailKit delivers confirmation and password-reset messages through `IEmailSender<User>`. Development settings point to Mailpit on `127.0.0.1:1025`. Mailpit captures the email locally; it does not deliver it to real inboxes. Plain SMTP is restricted to localhost in Development. Production SMTP must use STARTTLS and credentials supplied outside Git.
 
@@ -45,9 +45,9 @@ With Mailpit running:
 dotnet run --project tools/EmailSmokeTest -p:UseAppHost=false -p:OutputPath=bin/Verification/
 ```
 
-This sends a sample confirmation message to `mail-test@example.test`, without creating an account or changing the database. Its link is a test placeholder, not a working confirmation endpoint yet.
+This sends a sample message to `mail-test@example.test`, without creating an account or changing the database. Its token is deliberately fictitious. To test a real account, open `/register`, submit the form, open the email in Mailpit and click the confirmation button on the app page.
 
-Next: implement registration and confirmation, then login and authenticated ownership checks in place of userId = 1. Google/Microsoft will require app registration credentials before their flows can be tested.
+Next: password recovery, optional two-factor authentication and external providers. Google/Microsoft will require app registration credentials before their flows can be tested. Emails currently use English; the web interface supports all three languages.
 
 ## Español
 
@@ -62,9 +62,9 @@ Next: implement registration and confirmation, then login and authenticated owne
 - Confirmación de email obligatoria para entrar con contraseña.
 - Segundo factor opcional con una app autenticadora y códigos de recuperación.
 
-### Etapa actual: envío de correos local
+### Etapa actual: registro y confirmación de email
 
-User ahora hereda de IdentityUser<int> y AppDbContext de IdentityDbContext<User, IdentityRole<int>, int>. La migración AddIdentityUsers se aplicó a la base separada donetoday_auth. Todavía no están implementados los endpoints de autenticación ni las pantallas de login; la base de demostración anterior no cambió.
+User hereda de IdentityUser<int> y AppDbContext de IdentityDbContext<User, IdentityRole<int>, int>. La migración AddIdentityUsers se aplicó a la base separada donetoday_auth. Ya están implementados registro, confirmación y reenvío, con pantallas en inglés, español y alemán. Ya funcionan login, logout, rutas protegidas y hábitos asociados al dueño autenticado; la base de demostración anterior no cambió.
 
 MailKit envía los mensajes de confirmación y recuperación mediante `IEmailSender<User>`. La configuración de desarrollo apunta a Mailpit en `127.0.0.1:1025`. Mailpit captura los mensajes localmente; no los entrega a bandejas reales. El SMTP sin cifrar solo se permite en localhost y en Development. El SMTP de producción debe usar STARTTLS y credenciales fuera de Git.
 
@@ -94,9 +94,31 @@ Con Mailpit iniciado:
 dotnet run --project tools/EmailSmokeTest -p:UseAppHost=false -p:OutputPath=bin/Verification/
 ```
 
-Envía un mensaje de ejemplo a `mail-test@example.test`, sin crear una cuenta ni cambiar la base. El enlace del mensaje es ficticio: todavía no hay un endpoint de confirmación funcionando.
+Envía un mensaje de ejemplo a `mail-test@example.test`, sin crear una cuenta ni cambiar la base. Su token es ficticio. Para probar una cuenta real, abrí `/register`, enviá el formulario, abrí el correo en Mailpit y pulsá el botón de confirmación en la página de la app.
 
-Siguiente paso: implementar registro y confirmación, después login y comprobaciones del dueño autenticado en lugar de userId = 1. Para probar Google/Microsoft necesitaremos las credenciales de registro de sus aplicaciones.
+Siguiente paso: recuperación de contraseña, segundo factor opcional y proveedores externos. Para probar Google/Microsoft necesitaremos las credenciales de registro de sus aplicaciones. Los correos se envían en inglés por ahora; la interfaz web admite los tres idiomas.
+
+## Registration checks / Pruebas de registro
+
+With Mailpit and the HTTPS backend running, use PowerShell 7 from the repository root. The script creates a fictitious user in the development database and checks email delivery, valid confirmation, rejection of invalid tokens and CSRF protection. / Con Mailpit y el backend HTTPS ejecutándose, usá PowerShell 7 desde la raíz. El script crea un usuario ficticio en la base de desarrollo y comprueba el correo, la confirmación válida, el rechazo de tokens inválidos y la protección CSRF.
+
+```powershell
+./tools/test-registration.ps1 -ApiUrl https://localhost:7154
+```
+
+## Login and HTTPS / Login y HTTPS
+
+Run the frontend with `npm run dev` and open `https://localhost:5173`. The `predev` script exports the .NET development certificate into `.local/https/`, which is excluded from Git. If the certificate is not trusted on a new machine, run `dotnet dev-certs https --trust` and accept the operating system prompt yourself. Restart Vite after switching from HTTP. / Ejecutá el frontend con `npm run dev` y abrí `https://localhost:5173`. El script `predev` exporta el certificado de desarrollo de .NET a `.local/https/`, excluido de Git. Si no es confiable en una máquina nueva, ejecutá `dotnet dev-certs https --trust` y aceptá el aviso del sistema operativo. Reiniciá Vite al cambiar de HTTP a HTTPS.
+
+`POST /api/auth/login` uses Identity's password sign-in with mandatory email confirmation. It returns the same failure response for incorrect credentials, unconfirmed email and a locked account. Five failed passwords temporarily lock the account for 15 minutes. The HttpOnly, Secure, SameSite=Lax cookie is a browser-session cookie with an eight-hour authentication ticket and sliding renewal. `GET /api/auth/me` returns only ID/email; `POST /api/auth/logout` clears the session cookie. Passwords and authentication tokens are never saved in localStorage. / `POST /api/auth/login` usa Identity y exige confirmar el email. Devuelve el mismo fallo para credenciales incorrectas, email sin confirmar y cuenta bloqueada. Cinco contraseñas incorrectas bloquean la cuenta durante 15 minutos. La cookie HttpOnly, Secure y SameSite=Lax dura la sesión del navegador, con un ticket de ocho horas y renovación durante el uso. `GET /api/auth/me` devuelve solamente ID/email; `POST /api/auth/logout` elimina la cookie. No se guardan contraseñas ni tokens de autenticación en localStorage.
+
+PowerShell 7 integration test (creates two fictitious accounts and one habit in the development database; one account ends temporarily locked) / Prueba de integración con PowerShell 7 (crea dos cuentas ficticias y un hábito en desarrollo; una cuenta queda bloqueada temporalmente):
+
+```powershell
+./tools/test-authentication.ps1 -ApiUrl https://localhost:7154
+```
+
+Authentication POST requests require the token from `GET /api/auth/csrf` in `X-CSRF-TOKEN`. Each IP is limited to 20 registration, confirmation or login requests per minute. Confirmation requires an explicit button click, so visiting a link alone does not confirm an account. Configure `Authentication:FrontendUrl` with the trusted frontend origin; production requires HTTPS. / Los POST de autenticación requieren el token de `GET /api/auth/csrf` en `X-CSRF-TOKEN`. Cada IP tiene un límite de 20 peticiones de registro, confirmación o login por minuto. Confirmar requiere pulsar un botón; visitar el enlace no confirma la cuenta. Configurá `Authentication:FrontendUrl` con el origen confiable del frontend; producción requiere HTTPS.
 
 ## Identity database / Base de Identity
 
@@ -112,6 +134,6 @@ dotnet run --project tools/DatabaseCheck -p:UseAppHost=false -p:OutputPath=bin/V
 
 The check prints database names and record counts, never credentials. / La comprobación muestra nombres de bases y cantidades de registros, nunca credenciales.
 
-The HTTP endpoints are still in transition and must not be published as a secure multi-user application until authenticated ownership checks are implemented. Secure cookies will also require HTTPS for the frontend origin, including development; that setup is part of the upcoming login step.
+Habit, Today and Progress endpoints require authentication and filter by the user ID in the Identity cookie. All habit mutations and authentication POSTs require CSRF validation. The frontend redirects anonymous users to login and clears private query caches on logout, login or detected account changes.
 
-Los endpoints HTTP siguen en transición y no deben publicarse como una app segura multiusuario hasta implementar las comprobaciones del dueño autenticado. Las cookies seguras también requerirán HTTPS en el origen del frontend, incluido el desarrollo; esa configuración corresponde al próximo paso de login.
+Los endpoints de hábitos, Today y Progress requieren autenticación y filtran por el ID de usuario de la cookie de Identity. Las modificaciones de hábitos y los POST de autenticación validan CSRF. El frontend redirige al login si falta sesión y limpia la caché privada al entrar, salir o detectar un cambio de cuenta.

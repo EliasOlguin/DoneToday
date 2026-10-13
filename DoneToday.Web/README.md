@@ -15,7 +15,7 @@ npm ci
 npm run dev
 ```
 
-Keep the backend running at `https://localhost:7154`. Vite forwards `/api` requests through its development proxy. `npm run build` produces `dist/`; `npm run preview` previews that output but does not provide the development API proxy.
+Open `https://localhost:5173` and keep the backend running at `https://localhost:7154`. The predev script exports the .NET development certificate into the ignored `.local/https` directory. On a new machine, trust it with `dotnet dev-certs https --trust`. Vite forwards `/api` requests through its development proxy. `npm run build` produces `dist/`; `npm run preview` previews that output but does not provide the development API proxy. Local login requires email confirmation; development emails appear in Mailpit. See [authentication](../docs/authentication.md).
 
 ### Source structure
 
@@ -88,7 +88,7 @@ npm ci
 npm run dev
 ```
 
-Mantené el backend iniciado en `https://localhost:7154`. Vite reenvía las peticiones `/api` mediante el proxy de desarrollo. `npm run build` genera `dist/`; `npm run preview` permite ver esa compilación, pero no incluye el proxy de desarrollo hacia la API.
+Abrí `https://localhost:5173` y mantené el backend iniciado en `https://localhost:7154`. El script predev exporta el certificado de .NET a `.local/https`, excluido de Git. En una máquina nueva, marcalo como confiable con `dotnet dev-certs https --trust`. Vite reenvía `/api` mediante su proxy. `npm run build` genera `dist/`; `npm run preview` permite ver esa compilación, pero no incluye el proxy hacia la API. El login exige confirmar el email; los correos de desarrollo aparecen en Mailpit. Consultá [autenticación](../docs/authentication.md).
 
 ### Estructura del código
 

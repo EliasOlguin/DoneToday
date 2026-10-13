@@ -44,7 +44,7 @@ Requirements: .NET SDK 10, Node.js 24 with npm, PostgreSQL, and the EF Core 10 C
    dotnet ef database update --project DoneToday
    ```
 
-   Identity infrastructure is being integrated. Development now uses the separate `donetoday_auth` database while keeping the previous database intact. Registration/login endpoints are not implemented yet and controllers still use `userId = 1`. The new database starts empty; account creation will be managed by Identity. See [authentication preparation](docs/authentication.md).
+   Identity infrastructure is being integrated. Development now uses the separate `donetoday_auth` database while keeping the previous database intact. Registration, email confirmation, login and logout are implemented. Habit endpoints use the authenticated user ID. Identity manages account creation in the new database. See [authentication preparation](docs/authentication.md).
 
 3. Trust the local development certificate and start the API:
 
@@ -101,7 +101,7 @@ Stop the running API before `dotnet test` if Windows reports locked build files.
 
 ### Current scope
 
-This is a development MVP. It has no authentication or account-based preferences yet. Theme and language preferences are stored per browser. Statistics currently cover the current week; custom icons, month/year views, and configurable start/end dates from the design reference are not implemented.
+This is a development MVP. It supports local email/password authentication; account-based preferences, password recovery, optional 2FA and external providers are still pending. Theme and language preferences are stored per browser. Statistics currently cover the current week; custom icons, month/year views, and configurable start/end dates from the design reference are not implemented.
 
 For frontend structure, editor settings, and adding translations, see [the frontend README](DoneToday.Web/README.md).
 
@@ -147,7 +147,7 @@ Requisitos: .NET SDK 10, Node.js 24 con npm, PostgreSQL y la CLI de EF Core 10. 
    dotnet ef database update --project DoneToday
    ```
 
-   La infraestructura de Identity está en integración. Desarrollo usa la base separada `donetoday_auth` y conserva la anterior. Todavía no hay endpoints de registro/login y los controladores siguen usando `userId = 1`. La base nueva empieza vacía; Identity gestionará la creación de cuentas. Consultá [la preparación de autenticación](docs/authentication.md).
+   La infraestructura de Identity está en integración. Desarrollo usa la base separada `donetoday_auth` y conserva la anterior. Ya hay registro, confirmación de email, login y logout. Los endpoints de hábitos usan el ID del usuario autenticado. Identity gestiona la creación de cuentas en la base nueva. Consultá [la preparación de autenticación](docs/authentication.md).
 
 3. Confiá en el certificado local de desarrollo e iniciá la API:
 
@@ -204,6 +204,6 @@ Si Windows informa que los archivos de compilación están bloqueados, detené l
 
 ### Alcance actual
 
-Es un MVP de desarrollo. Todavía no hay autenticación ni preferencias asociadas a una cuenta. El idioma y el tema se guardan por navegador. Las estadísticas muestran la semana actual; los iconos personalizados, las vistas mensual/anual y las fechas de inicio/fin configurables de la referencia visual todavía no están implementados.
+Es un MVP de desarrollo. Ya admite autenticación con email/contraseña; faltan preferencias por cuenta, recuperación de contraseña, segundo factor opcional y proveedores externos. El idioma y el tema se guardan por navegador. Las estadísticas muestran la semana actual; los iconos personalizados, las vistas mensual/anual y las fechas de inicio/fin configurables de la referencia visual todavía no están implementados.
 
 Para la estructura del frontend, configuración del editor y nuevas traducciones, consultá [el README del frontend](DoneToday.Web/README.md).

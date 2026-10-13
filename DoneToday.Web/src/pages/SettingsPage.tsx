@@ -8,11 +8,25 @@ import { getArchivedHabits, restoreHabit } from '../api/habits'
 import { formatSchedule } from '../lib/format'
 import { languages } from '../i18n'
 import Icon from '../components/ui/Icon'
+import { authPost } from '../api/auth'
+import { useSession } from '../hooks/useSession'
+import { useNavigate } from 'react-router'
 
 export default function SettingsPage() {
   const { t, i18n } = useTranslation()
   const { theme, setTheme } = useContext(ThemeContext)
   const client = useQueryClient()
+  const session = useSession()
+  const navigate = useNavigate()
+  const logout = useMutation({
+    mutationFn: () => authPost('logout'),
+    onSuccess: async () => {
+      await client.cancelQueries()
+      client.clear()
+      client.setQueryData(['session'], null)
+      navigate('/login', { replace: true })
+    },
+  })
   const archived = useQuery({
     queryKey: ['habits', 'archived'],
     queryFn: getArchivedHabits,
@@ -32,6 +46,22 @@ export default function SettingsPage() {
         {t('nav.settings')}
       </h1>
       <p className="mt-2 text-sm text-muted">{t('settings.tagline')}</p>
+      <section className="panel mt-4 space-y-3">
+        <h2 className="font-semibold">{t('auth.account')}</h2>
+        <p className="break-all text-sm text-muted">{session.data?.email}</p>
+        <button
+          className="btn-primary"
+          disabled={logout.isPending}
+          onClick={() => logout.mutate()}
+        >
+          {t('auth.logout')}
+        </button>
+        {logout.isError && (
+          <p role="alert" className="text-danger">
+            {t('auth.logoutError')}
+          </p>
+        )}
+      </section>
       <section className="panel mt-6">
         <h2 className="font-semibold">{t('settings.appearance')}</h2>
         <p className="mt-1 text-sm text-muted">{t('settings.themeHelp')}</p>

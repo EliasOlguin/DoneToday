@@ -15,6 +15,8 @@ public static class IdentitySetup
         options.Password.RequireDigit = true;
         options.Password.RequireNonAlphanumeric = true;
         options.SignIn.RequireConfirmedEmail = true;
+        options.Lockout.MaxFailedAccessAttempts = 5;
+        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
     }
 
     public static IServiceCollection AddDoneTodayIdentity(this IServiceCollection services)
@@ -35,6 +37,8 @@ public static class IdentitySetup
             options.Cookie.HttpOnly = true;
             options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
             options.Cookie.SameSite = SameSiteMode.Lax;
+            options.ExpireTimeSpan = TimeSpan.FromHours(8);
+            options.SlidingExpiration = true;
             options.Events.OnRedirectToLogin = context =>
             {
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
@@ -46,7 +50,10 @@ public static class IdentitySetup
                 return Task.CompletedTask;
             };
         });
-        services.AddAuthorization();
+        services.AddAuthorization(options => options.AddPolicy("ApplicationUser", policy =>
+            policy.RequireAuthenticatedUser().RequireAssertion(context =>
+                int.TryParse(context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
+                    out var id) && id > 0)));
         services.AddAntiforgery(options => options.HeaderName = "X-CSRF-TOKEN");
         return services;
     }

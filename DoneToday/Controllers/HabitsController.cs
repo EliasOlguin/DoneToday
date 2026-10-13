@@ -1,4 +1,4 @@
-﻿using DoneToday.Api.Data;
+using DoneToday.Api.Data;
 using DoneToday.Api.Dtos.Habits;
 using DoneToday.Api.Entities;
 using DoneToday.Dtos.Habits;
@@ -9,8 +9,9 @@ using DoneToday.Api.Services;
 namespace DoneToday.Api.Controllers;
 
 [ApiController]
+[ValidateCsrf]
 [Route("api/[controller]")]
-public class HabitsController : ControllerBase
+public class HabitsController : AuthenticatedController
 {
     private readonly AppDbContext _context;
 
@@ -23,7 +24,7 @@ public class HabitsController : ControllerBase
     public async Task<ActionResult<HabitResponse>> CreateHabit(
         CreateHabitRequest request)
     {
-        const int userId = 1;
+        var userId = CurrentUserId;
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var habit = new Habit
         {
@@ -69,7 +70,7 @@ public class HabitsController : ControllerBase
     [HttpGet("{id:int}")]
     public async Task<ActionResult<HabitResponse>> GetHabit(int id)
     {
-        const int userId = 1;
+        var userId = CurrentUserId;
 
         var habit = await _context.Habits
             .AsNoTracking()
@@ -103,7 +104,7 @@ public class HabitsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<HabitResponse>>> GetHabits()
     {
-        const int userId = 1;
+        var userId = CurrentUserId;
 
         var habits = await _context.Habits
             .AsNoTracking()
@@ -137,7 +138,7 @@ public class HabitsController : ControllerBase
     int id,
     UpdateHabitRequest request)
     {
-        const int userId = 1;
+        var userId = CurrentUserId;
 
         var habit = await _context.Habits
             .Include(h => h.Schedules)
@@ -182,7 +183,7 @@ public class HabitsController : ControllerBase
     public async Task<ActionResult<HabitDetailResponse>> GetHabitDetail(int id,
         [FromServices] StreakService streakService)
     {
-        const int userId = 1;
+        var userId = CurrentUserId;
         var habit = await _context.Habits.AsNoTracking()
             .Include(h => h.Schedules).Include(h => h.Completions)
             .FirstOrDefaultAsync(h => h.Id == id && h.UserId == userId && !h.IsArchived);
@@ -204,7 +205,7 @@ public class HabitsController : ControllerBase
     [HttpPatch("{id:int}/archive")]
     public async Task<IActionResult> ArchiveHabit(int id)
     {
-        const int userId = 1;
+        var userId = CurrentUserId;
 
         var habit = await _context.Habits
             .FirstOrDefaultAsync(h =>
@@ -227,7 +228,7 @@ public class HabitsController : ControllerBase
     [HttpPatch("{id:int}/restore")]
     public async Task<IActionResult> RestoreHabit(int id)
     {
-        const int userId = 1;
+        var userId = CurrentUserId;
 
         var habit = await _context.Habits
             .FirstOrDefaultAsync(h =>
@@ -250,7 +251,7 @@ public class HabitsController : ControllerBase
     [HttpGet("archived")]
     public async Task<ActionResult<List<HabitResponse>>> GetArchivedHabits()
     {
-        const int userId = 1;
+        var userId = CurrentUserId;
 
         var habits = await _context.Habits
             .AsNoTracking()
@@ -282,7 +283,7 @@ public class HabitsController : ControllerBase
     [HttpPost("{id:int}/complete")]
     public async Task<IActionResult> CompleteHabit(int id)
     {
-        const int userId = 1;
+        var userId = CurrentUserId;
 
         var habit = await _context.Habits
             .Include(h => h.Schedules)
@@ -324,7 +325,7 @@ public class HabitsController : ControllerBase
     [HttpDelete("{id:int}/complete")]
     public async Task<IActionResult> UndoCompletion(int id)
     {
-        const int userId = 1;
+        var userId = CurrentUserId;
 
         var habit = await _context.Habits
             .FirstOrDefaultAsync(h =>

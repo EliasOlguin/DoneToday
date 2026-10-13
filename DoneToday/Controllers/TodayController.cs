@@ -1,4 +1,4 @@
-﻿using DoneToday.Api.Data;
+using DoneToday.Api.Data;
 using DoneToday.Api.Dtos.Today;
 using DoneToday.Api.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +8,7 @@ namespace DoneToday.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class TodayController : ControllerBase
+public class TodayController : AuthenticatedController
 {
     private readonly AppDbContext _context;
     private readonly StreakService _streakService;
@@ -21,7 +21,7 @@ public class TodayController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<TodayHabitResponse>>> GetToday()
     {
-        const int userId = 1;
+        var userId = CurrentUserId;
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var dayOfWeek = DateTime.UtcNow.DayOfWeek;

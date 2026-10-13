@@ -116,13 +116,6 @@ function HabitForm({ habit }: { habit?: HabitDetail }) {
         <h1 id="form-title" className="text-lg font-semibold">
           {habit ? t('form.edit') : t('form.new')}
         </h1>
-        <button
-          type="submit"
-          disabled={save.isPending}
-          className="min-h-11 rounded-xl bg-primary px-4 text-sm font-semibold text-background disabled:opacity-50"
-        >
-          {save.isPending ? t('common.saving') : t('common.save')}
-        </button>
       </div>
       <fieldset
         disabled={save.isPending}
@@ -242,6 +235,13 @@ function HabitForm({ habit }: { habit?: HabitDetail }) {
           {validationError ? t(validationError) : errorText(save.error)}
         </p>
       )}
+      <button
+        type="submit"
+        disabled={save.isPending}
+        className="btn-primary mt-6 w-full"
+      >
+        {save.isPending ? t('common.saving') : t('common.save')}
+      </button>
     </form>
   )
 }

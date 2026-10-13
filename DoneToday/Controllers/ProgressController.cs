@@ -1,4 +1,4 @@
-﻿using DoneToday.Api.Data;
+using DoneToday.Api.Data;
 using DoneToday.Api.Dtos.Progress;
 using DoneToday.Api.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +8,7 @@ namespace DoneToday.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ProgressController : ControllerBase
+public class ProgressController : AuthenticatedController
 {
     private readonly AppDbContext _context;
     private readonly ProgressService _progressService;
@@ -25,7 +25,7 @@ public class ProgressController : ControllerBase
     public async Task<ActionResult<WeeklyProgressResponse>>
         GetWeeklyProgress()
     {
-        const int userId = 1;
+        var userId = CurrentUserId;
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
