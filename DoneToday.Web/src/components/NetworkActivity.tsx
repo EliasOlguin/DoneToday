@@ -2,7 +2,7 @@ import { useIsFetching, useIsMutating } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
-import Icon from './ui/Icon'
+import Logo from './Logo'
 import { isInitialRequest } from '../api/queryClient'
 
 export default function NetworkActivity({ children }: { children: ReactNode }) {
@@ -43,7 +43,7 @@ export default function NetworkActivity({ children }: { children: ReactNode }) {
               aria-hidden="true"
             >
               <span className="absolute inset-0 animate-spin rounded-full border-[3px] border-primary/20 border-t-primary" />
-              <Icon name="sun" className="h-7 w-7 text-primary" />
+              <Logo className="h-9 w-9" />
             </div>
             <p className="text-base font-medium text-foreground">
               {t(mutating ? 'common.processing' : 'auth.loading')}

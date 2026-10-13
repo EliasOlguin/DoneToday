@@ -1,8 +1,10 @@
 import { useTranslation } from 'react-i18next'
 import { Link, NavLink, Outlet, useLocation } from 'react-router'
 import Icon from '../components/ui/Icon'
-import { languages } from '../i18n'
+import LanguageSelector from '../components/LanguageSelector'
 import { useSession } from '../hooks/useSession'
+import Logo from '../components/Logo'
+import InstallApp from '../components/InstallApp'
 
 const navigation = [
   { to: '/today', label: 'nav.today', icon: 'home' },
@@ -12,7 +14,7 @@ const navigation = [
 ] as const
 
 export default function AppLayout() {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const session = useSession()
   const { pathname } = useLocation()
   const wide = ['/today', '/habits', '/progress'].includes(pathname)
@@ -24,7 +26,7 @@ export default function AppLayout() {
             to="/today"
             className="flex items-center gap-3 text-xl font-bold tracking-tight"
           >
-            <Icon name="sun" className="h-7 w-7 text-primary" />
+            <Logo />
             DoneToday
           </Link>
           <nav
@@ -44,18 +46,7 @@ export default function AppLayout() {
             ))}
           </nav>
           <div className="hidden items-center gap-5 lg:flex">
-            <select
-              aria-label={t('settings.language')}
-              value={i18n.resolvedLanguage ?? 'en'}
-              onChange={(event) => void i18n.changeLanguage(event.target.value)}
-              className="min-h-11 rounded-xl bg-transparent px-2 text-sm text-muted"
-            >
-              {languages.map(({ code, label }) => (
-                <option key={code} value={code} lang={code}>
-                  {label}
-                </option>
-              ))}
-            </select>
+            <LanguageSelector />
             <Link
               to="/settings"
               aria-label={t('auth.account')}
@@ -97,6 +88,7 @@ export default function AppLayout() {
           ))}
         </div>
       </nav>
+      {!pathname.startsWith('/settings') && <InstallApp suggestion />}
     </div>
   )
 }

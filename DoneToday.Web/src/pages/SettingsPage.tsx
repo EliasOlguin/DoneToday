@@ -6,14 +6,15 @@ import { useContext } from 'react'
 import { ThemeContext } from '../context/theme'
 import { getArchivedHabits, restoreHabit } from '../api/habits'
 import { formatSchedule } from '../lib/format'
-import { languages } from '../i18n'
+import LanguageSelector from '../components/LanguageSelector'
 import Icon from '../components/ui/Icon'
 import { authPost } from '../api/auth'
 import { useSession } from '../hooks/useSession'
 import { useNavigate } from 'react-router'
+import InstallApp from '../components/InstallApp'
 
 export default function SettingsPage() {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const { theme, setTheme } = useContext(ThemeContext)
   const client = useQueryClient()
   const session = useSession()
@@ -46,6 +47,7 @@ export default function SettingsPage() {
         {t('nav.settings')}
       </h1>
       <p className="mt-2 text-sm text-muted">{t('settings.tagline')}</p>
+      <InstallApp />
       <section className="panel mt-4 flex items-center gap-4">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
           <Icon name="user" className="h-6 w-6" />
@@ -76,25 +78,9 @@ export default function SettingsPage() {
       </section>
       <section className="panel mt-4">
         <h2 className="font-semibold">{t('settings.language')}</h2>
-        <label htmlFor="language" className="sr-only">
-          {t('settings.language')}
-        </label>
-        <select
-          id="language"
-          value={i18n.resolvedLanguage ?? 'en'}
-          onChange={(event) => void i18n.changeLanguage(event.target.value)}
-          className="field mt-3"
-        >
-          {languages.map((language) => (
-            <option
-              key={language.code}
-              value={language.code}
-              lang={language.code}
-            >
-              {language.label}
-            </option>
-          ))}
-        </select>
+        <div className="mt-3">
+          <LanguageSelector fullWidth />
+        </div>
         <p className="mt-3 text-xs leading-relaxed text-muted">
           {t('settings.languageHelp')}
         </p>

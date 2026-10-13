@@ -56,8 +56,19 @@ export default function LoginPage() {
     login.mutate()
   }
   return (
-    <section className="mx-auto max-w-md">
-      <h1 className="page-title">{t('auth.login')}</h1>
+    <section
+      className="panel mx-auto w-full max-w-md p-6 shadow-sm sm:p-7"
+      aria-labelledby="login-title"
+    >
+      <h1
+        id="login-title"
+        className="text-center text-3xl font-bold tracking-tight"
+      >
+        {t('auth.login')}
+      </h1>
+      <p className="mt-2 text-center text-sm text-muted">
+        {t('today.tagline')}
+      </p>
       {params.has('externalError') && (
         <p role="alert" className="mt-4 text-danger">
           {t(
@@ -67,12 +78,11 @@ export default function LoginPage() {
           )}
         </p>
       )}
-      {!twoFactor && <GoogleButton />}
-      <form className="panel mt-6 space-y-4" onSubmit={submit}>
+      <form className="mt-6 space-y-3" onSubmit={submit}>
         {twoFactor ? (
           <>
             <p className="text-sm text-muted">{t('twoFactor.loginHelp')}</p>
-            <label className="block">
+            <label className="block text-sm font-medium">
               {t(recoveryCode ? 'twoFactor.recoveryCode' : 'twoFactor.code')}
               <input
                 className="field mt-2"
@@ -102,7 +112,7 @@ export default function LoginPage() {
           </>
         ) : (
           <>
-            <label className="block">
+            <label className="block text-sm font-medium">
               {t('auth.email')}
               <input
                 className="field mt-2"
@@ -114,7 +124,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
               />
             </label>
-            <label className="block">
+            <label className="block text-sm font-medium">
               {t('auth.password')}
               <input
                 className="field mt-2"
@@ -127,6 +137,14 @@ export default function LoginPage() {
               />
             </label>
           </>
+        )}
+        {!twoFactor && (
+          <Link
+            className="ml-auto flex min-h-8 w-fit items-center text-xs font-medium text-primary hover:underline"
+            to="/forgot-password"
+          >
+            {t('auth.forgotPassword')}
+          </Link>
         )}
         {login.isError && (
           <p role="alert" className="text-danger">
@@ -147,10 +165,11 @@ export default function LoginPage() {
           {login.isPending ? t('auth.loading') : t('auth.login')}
         </button>
       </form>
+      {!twoFactor && <GoogleButton separator />}
       {twoFactor && (
         <button
           type="button"
-          className="mt-4 text-primary underline"
+          className="mx-auto mt-4 block min-h-11 text-sm text-primary underline"
           onClick={() => {
             setTwoFactor(false)
             setCode('')
@@ -161,33 +180,44 @@ export default function LoginPage() {
           {t('twoFactor.restart')}
         </button>
       )}
-      <Link className="mt-5 block text-primary" to="/forgot-password">
-        {t('auth.forgotPassword')}
-      </Link>
-      <Link className="mt-5 inline-block text-primary" to="/register">
-        {t('auth.register')}
-      </Link>
-      <div className="mt-6 space-y-3">
-        <p className="text-sm text-muted">{t('auth.confirmHelp')}</p>
-        <button
-          type="button"
-          className="text-primary underline disabled:opacity-50"
-          disabled={!email || resend.isPending || resend.isSuccess}
-          onClick={() => resend.mutate()}
+      {!twoFactor && (
+        <Link
+          className="mt-5 flex min-h-11 items-center justify-center text-sm font-semibold text-primary hover:underline"
+          to="/register"
         >
-          {t('auth.resend')}
-        </button>
-        {resend.isSuccess && <p role="status">{t('auth.sent')}</p>}
-        {resend.isError && (
-          <p role="alert" className="text-danger">
-            {t(
-              resend.error.message === 'rate'
-                ? 'auth.rate'
-                : 'auth.emailUnavailable',
+          {t('auth.register')}
+        </Link>
+      )}
+      {!twoFactor && (
+        <details className="mt-5 border-t border-muted/10 pt-4 text-sm">
+          <summary className="cursor-pointer text-muted">
+            {t('auth.confirmationHelp')}
+          </summary>
+          <div className="mt-3 space-y-3">
+            <p className="text-xs leading-relaxed text-muted">
+              {t('auth.confirmHelp')}
+            </p>
+            <button
+              type="button"
+              className="text-primary underline disabled:opacity-50"
+              disabled={!email || resend.isPending || resend.isSuccess}
+              onClick={() => resend.mutate()}
+            >
+              {t('auth.resend')}
+            </button>
+            {resend.isSuccess && <p role="status">{t('auth.sent')}</p>}
+            {resend.isError && (
+              <p role="alert" className="text-danger">
+                {t(
+                  resend.error.message === 'rate'
+                    ? 'auth.rate'
+                    : 'auth.emailUnavailable',
+                )}
+              </p>
             )}
-          </p>
-        )}
-      </div>
+          </div>
+        </details>
+      )}
     </section>
   )
 }

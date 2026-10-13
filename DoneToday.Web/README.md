@@ -65,6 +65,12 @@ To add an interface message:
 
 Keys use dot-separated names in flat JSON objects (`keySeparator: false`). TypeScript checks keys against the English catalog. API failures use stable error keys and are translated when rendered, so an existing error can follow a language change. Dates and percentages use `Intl`; scheduling remains UTC. User-created content is not automatically translated.
 
+### Logo and web app installation
+
+The editable brand mark is `public/brand/logo.svg`: a sun and check mark in DoneToday's purple. The favicon and PNG app icons use the same design. `public/manifest.json` defines the app name, icons, scope and standalone launch; opening the installed app at `/` keeps the normal login/session routing.
+
+After 15 seconds inside the authenticated app, a small installation suggestion appears. "Maybe later" postpones it for seven days on that browser. Settings includes the same installation controls. Supported browsers use their native `beforeinstallprompt` dialog after a user click; other browsers show instructions, including Safari's Add to Home Screen flow. Availability depends on the browser. No service worker or offline/private-data cache is added: DoneToday still needs an internet connection.
+
 ### Editor and checks
 
 VS Code settings recommend ESLint and Prettier, validate while typing, and format on save. Use `dtcomp` or `dtprops` in a TSX file for the included component snippets. Prettier uses two spaces, single quotes, and no semicolons.
@@ -73,6 +79,8 @@ VS Code settings recommend ESLint and Prettier, validate while typing, and forma
 npm run build
 npm run lint
 npm run test:i18n
+npm run test:query
+npm run test:install
 ```
 
 ## Español
@@ -138,6 +146,12 @@ Para agregar un mensaje de interfaz:
 
 Las claves tienen nombres separados por puntos dentro de objetos JSON planos (`keySeparator: false`). TypeScript las comprueba contra el catálogo en inglés. Los errores de la API usan claves estables y se traducen al mostrarlos, por lo que un error visible puede cambiar de idioma. Las fechas y los porcentajes usan `Intl`; la programación sigue en UTC. El contenido creado por el usuario no se traduce automáticamente.
 
+### Logo e instalación como web app
+
+El logo editable está en `public/brand/logo.svg`: un sol y una marca de completado con el violeta de DoneToday. El favicon y los íconos PNG usan el mismo diseño. `public/manifest.json` define nombre, íconos, alcance y apertura en una ventana independiente; al abrir la app instalada en `/` se conserva la navegación según la sesión del usuario.
+
+Después de 15 segundos dentro de la app autenticada, aparece una sugerencia discreta. "Más tarde" la pospone siete días en ese navegador. Settings también incluye los controles de instalación. Los navegadores compatibles muestran su diálogo nativo de `beforeinstallprompt` al pulsar el botón; los demás muestran instrucciones, incluida la opción Agregar a inicio en Safari. La disponibilidad depende del navegador. No se agrega un service worker ni una caché de datos privados: DoneToday sigue necesitando conexión a internet.
+
 ### Editor y verificaciones
 
 La configuración de VS Code recomienda ESLint y Prettier, valida mientras escribís y formatea al guardar. Usá `dtcomp` o `dtprops` en un archivo TSX para los snippets de componentes incluidos. Prettier usa dos espacios, comillas simples y no agrega punto y coma.
@@ -146,4 +160,6 @@ La configuración de VS Code recomienda ESLint y Prettier, valida mientras escri
 npm run build
 npm run lint
 npm run test:i18n
+npm run test:query
+npm run test:install
 ```
