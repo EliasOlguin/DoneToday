@@ -14,9 +14,18 @@ export default function HabitsPage() {
   } = useQuery({ queryKey: ['habits'], queryFn: getHabits })
   return (
     <section aria-labelledby="habits-title">
-      <h1 id="habits-title" className="text-[28px] font-bold tracking-tight">
-        {t('nav.habits')}
-      </h1>
+      <div className="flex items-center justify-between gap-4">
+        <h1 id="habits-title" className="page-title">
+          {t('nav.habits')}
+        </h1>
+        <Link
+          to="/habits/new"
+          className="btn-primary hidden items-center gap-2 text-sm lg:inline-flex"
+        >
+          <Icon name="plus" />
+          {t('common.create')}
+        </Link>
+      </div>
       <p className="mt-2 text-sm text-muted">{t('habits.tagline')}</p>
       <div className="mt-6">
         {isPending ? (
@@ -32,7 +41,7 @@ export default function HabitsPage() {
             {t('habits.empty')}
           </p>
         ) : (
-          <ul className="space-y-3">
+          <ul className="grid gap-3 lg:grid-cols-2 lg:gap-5">
             {habits.map((habit) => (
               <li
                 key={habit.id}

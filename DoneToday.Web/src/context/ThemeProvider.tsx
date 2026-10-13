@@ -6,11 +6,11 @@ import type { Theme } from './theme'
 export default function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
     try {
-      return localStorage.getItem('donetoday-theme') === 'light'
-        ? 'light'
-        : 'dark'
+      return localStorage.getItem('donetoday-theme') === 'dark'
+        ? 'dark'
+        : 'light'
     } catch {
-      return 'dark'
+      return 'light'
     }
   })
   useEffect(() => {

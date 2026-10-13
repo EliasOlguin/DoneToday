@@ -1,4 +1,6 @@
 {
+  "today.habits": "Today's habits",
+  "today.completionRate": "Weekly completion rate",
   "common.processing": "Processing…",
   "google.continue": "Continue with Google",
   "google.link": "Link Google account",
