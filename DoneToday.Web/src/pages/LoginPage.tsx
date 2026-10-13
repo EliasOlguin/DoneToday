@@ -52,6 +52,7 @@ export default function LoginPage() {
   })
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (login.isPending) return
     login.mutate()
   }
   return (
@@ -138,7 +139,11 @@ export default function LoginPage() {
             )}
           </p>
         )}
-        <button className="btn-primary w-full" disabled={login.isPending}>
+        <button
+          className="btn-primary w-full"
+          aria-busy={login.isPending}
+          disabled={login.isPending}
+        >
           {login.isPending ? t('auth.loading') : t('auth.login')}
         </button>
       </form>

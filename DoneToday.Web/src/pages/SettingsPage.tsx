@@ -165,6 +165,7 @@ export default function SettingsPage() {
                 </div>
                 <button
                   type="button"
+                  aria-busy={restore.isPending}
                   disabled={restore.isPending}
                   onClick={() => restore.mutate(habit.id)}
                   className="min-h-11 rounded-xl px-3 text-sm font-medium text-primary disabled:opacity-50"
@@ -195,6 +196,7 @@ export default function SettingsPage() {
         <button
           type="button"
           className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-danger/25 bg-danger/5 px-4 text-sm font-semibold text-danger transition-colors hover:bg-danger/10 disabled:opacity-50"
+          aria-busy={logout.isPending}
           disabled={logout.isPending}
           onClick={() => logout.mutate()}
         >

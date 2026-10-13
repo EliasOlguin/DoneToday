@@ -25,6 +25,7 @@ export default function RegisterPage() {
   })
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (register.isPending) return
     setMismatch(password !== confirmation)
     if (password === confirmation) register.mutate()
   }
@@ -93,7 +94,11 @@ export default function RegisterPage() {
               {t('auth.mismatch')}
             </p>
           )}
-          <button className="btn-primary w-full" disabled={register.isPending}>
+          <button
+            className="btn-primary w-full"
+            aria-busy={register.isPending}
+            disabled={register.isPending}
+          >
             {register.isPending ? t('common.saving') : t('auth.register')}
           </button>
         </form>

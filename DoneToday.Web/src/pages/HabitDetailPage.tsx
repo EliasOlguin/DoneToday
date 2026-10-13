@@ -162,6 +162,7 @@ export default function HabitDetailPage() {
             <div className="mt-3 flex gap-3">
               <button
                 type="button"
+                aria-busy={archive.isPending}
                 disabled={archive.isPending}
                 onClick={() => archive.mutate()}
                 className="min-h-11 rounded-xl bg-danger px-4 text-sm font-semibold text-background disabled:opacity-50"

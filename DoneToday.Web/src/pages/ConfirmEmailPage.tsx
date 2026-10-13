@@ -27,6 +27,7 @@ export default function ConfirmEmailPage() {
         ) : (
           <button
             className="btn-primary"
+            aria-busy={confirm.isPending}
             disabled={confirm.isPending}
             onClick={() => confirm.mutate()}
           >

@@ -23,6 +23,7 @@ export default function GoogleButton({
   })
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (pending) return
     const form = event.currentTarget
     setPending(true)
     setError(false)
@@ -56,6 +57,7 @@ export default function GoogleButton({
       <button
         type="submit"
         disabled={pending}
+        aria-busy={pending}
         className="flex min-h-12 w-full items-center justify-center gap-3 rounded-xl border border-[#dadce0] bg-white px-4 text-sm font-semibold text-[#1f1f1f] hover:bg-[#f8fafc] disabled:opacity-50"
       >
         <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24">

@@ -28,6 +28,7 @@ export default function ResetPasswordPage() {
   })
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (reset.isPending) return
     setMismatch(password !== confirmation)
     if (password === confirmation) reset.mutate()
   }
@@ -86,7 +87,11 @@ export default function ResetPasswordPage() {
               )}
             </p>
           )}
-          <button className="btn-primary w-full" disabled={reset.isPending}>
+          <button
+            className="btn-primary w-full"
+            aria-busy={reset.isPending}
+            disabled={reset.isPending}
+          >
             {t(reset.isPending ? 'auth.loading' : 'auth.resetPassword')}
           </button>
         </form>

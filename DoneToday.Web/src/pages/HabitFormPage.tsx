@@ -118,6 +118,7 @@ function HabitForm({ habit }: { habit?: HabitDetail }) {
         </h1>
       </div>
       <fieldset
+        aria-busy={save.isPending}
         disabled={save.isPending}
         className="space-y-6 disabled:opacity-60"
       >
@@ -237,6 +238,7 @@ function HabitForm({ habit }: { habit?: HabitDetail }) {
       )}
       <button
         type="submit"
+        aria-busy={save.isPending}
         disabled={save.isPending}
         className="btn-primary mt-6 w-full"
       >

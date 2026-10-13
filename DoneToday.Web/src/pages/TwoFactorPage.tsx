@@ -34,6 +34,7 @@ export default function TwoFactorPage() {
   async function action(
     name: 'setup' | 'enable' | 'disable' | 'recovery-codes',
   ) {
+    if (pending) return
     setPending(true)
     setError(false)
     try {
@@ -185,7 +186,11 @@ export default function TwoFactorPage() {
               </button>
             </div>
           ) : (
-            <button className="btn-primary w-full" disabled={pending}>
+            <button
+              className="btn-primary w-full"
+              aria-busy={pending}
+              disabled={pending}
+            >
               {t(setup ? 'twoFactor.enable' : 'twoFactor.setup')}
             </button>
           )}

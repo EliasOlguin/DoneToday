@@ -21,6 +21,22 @@ Render Free se suspende sin tráfico y pierde el sistema de archivos local al re
 3. Conservá el cliente OAuth de Google. Cuando sepamos la dirección de Render, agregá `https://TU-SERVICIO.onrender.com/signin-google` como otro URI autorizado. Conservá localhost para desarrollo. Si Google sigue en Testing, agregá a quienes probarán el login como usuarios de prueba.
 
 ## Secrets / Secretos
+### Verify Neon privately / Verificar Neon de forma privada
+
+Save the .NET/Npgsql production connection in user secrets as `ConnectionStrings:ProductionConnection`. This separate name does not change the local app connection. / Guardá la conexión .NET/Npgsql de producción en user secrets con el nombre `ConnectionStrings:ProductionConnection`. Ese nombre separado no cambia la conexión de la app local.
+
+```powershell
+dotnet run --project tools/NeonCheck
+```
+
+This performs a read-only check over TLS with certificate/hostname verification. To apply the app migrations to a new production database / Comprueba la conexión mediante TLS y verificación del certificado/servidor, sin modificar datos. Para aplicar las migraciones a una base nueva de producción:
+
+```powershell
+dotnet run --project tools/NeonCheck -- --migrate
+```
+
+The tool does not print credentials and rejects existing tables without migration history, or migration history from another app. The initial Neon connection and all four DoneToday migrations were verified successfully. No local data was copied. / La herramienta no imprime credenciales y rechaza tablas existentes sin historial o migraciones de otra app. Se verificó la conexión inicial con Neon y se aplicaron correctamente las cuatro migraciones de DoneToday. No se copiaron datos locales.
+
 
 Generate the deployment certificate once from the repository root / Generá el certificado una sola vez desde la raíz:
 

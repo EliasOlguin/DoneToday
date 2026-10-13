@@ -13,6 +13,7 @@ export default function ForgotPasswordPage() {
   })
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (request.isPending) return
     request.mutate()
   }
   return (
@@ -36,7 +37,11 @@ export default function ForgotPasswordPage() {
                 onChange={(e) => setEmail(e.target.value)}
               />
             </label>
-            <button className="btn-primary w-full" disabled={request.isPending}>
+            <button
+              className="btn-primary w-full"
+              aria-busy={request.isPending}
+              disabled={request.isPending}
+            >
               {t(request.isPending ? 'auth.loading' : 'auth.sendReset')}
             </button>
             {request.isError && (
