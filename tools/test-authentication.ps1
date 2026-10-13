@@ -1,4 +1,4 @@
-param([string]$ApiUrl = 'https://localhost:7155')
+param([string]$ApiUrl = 'https://localhost:7155', [switch]$FunctionsOnly)
 $ErrorActionPreference = 'Stop'
 $testPassword = 'ExampleStrong!123'
 
@@ -46,6 +46,7 @@ function New-TestUser {
 }
 
 # This test creates two disposable accounts and one habit in the development database.
+if ($FunctionsOnly) { return }
 $anonymous = [Microsoft.PowerShell.Commands.WebRequestSession]::new()
 $null = Request '/api/Habits' 401 $anonymous
 $first = New-TestUser

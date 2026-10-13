@@ -1,14 +1,19 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { authPost, getSession } from '../api/auth'
+import GoogleButton from '../components/GoogleButton'
 
 export default function LoginPage() {
   const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [params] = useSearchParams()
+  const [twoFactor, setTwoFactor] = useState(params.get('twoFactor') === '1')
+  const [code, setCode] = useState('')
+  const [recoveryCode, setRecoveryCode] = useState(false)
   const client = useQueryClient()
   const navigate = useNavigate()
   const location = useLocation()
@@ -17,13 +22,24 @@ export default function LoginPage() {
   })
   const login = useMutation({
     mutationFn: async () => {
-      await authPost('login', { email, password })
+      if (twoFactor) {
+        await authPost('two-factor/login', { code, recoveryCode })
+      } else {
+        const result = await authPost<
+          { requiresTwoFactor?: boolean } | undefined
+        >('login', { email, password })
+        if (result?.requiresTwoFactor) {
+          setTwoFactor(true)
+          return null
+        }
+      }
       const session = await getSession()
       if (!session) throw new Error('request')
       return session
     },
     onSuccess: async (session) => {
       setPassword('')
+      if (!session) return
       await client.cancelQueries()
       client.clear()
       client.setQueryData(['session'], session)
@@ -41,35 +57,84 @@ export default function LoginPage() {
   return (
     <section className="mx-auto max-w-md">
       <h1 className="page-title">{t('auth.login')}</h1>
+      {params.has('externalError') && (
+        <p role="alert" className="mt-4 text-danger">
+          {t(
+            params.get('externalError') === 'existingAccount'
+              ? 'google.existingAccount'
+              : 'google.failed',
+          )}
+        </p>
+      )}
+      {!twoFactor && <GoogleButton />}
       <form className="panel mt-6 space-y-4" onSubmit={submit}>
-        <label className="block">
-          {t('auth.email')}
-          <input
-            className="field mt-2"
-            type="email"
-            autoComplete="username"
-            required
-            maxLength={256}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </label>
-        <label className="block">
-          {t('auth.password')}
-          <input
-            className="field mt-2"
-            type="password"
-            autoComplete="current-password"
-            required
-            maxLength={128}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </label>
+        {twoFactor ? (
+          <>
+            <p className="text-sm text-muted">{t('twoFactor.loginHelp')}</p>
+            <label className="block">
+              {t(recoveryCode ? 'twoFactor.recoveryCode' : 'twoFactor.code')}
+              <input
+                className="field mt-2"
+                autoComplete="one-time-code"
+                inputMode={recoveryCode ? 'text' : 'numeric'}
+                required
+                maxLength={100}
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+              />
+            </label>
+            <button
+              type="button"
+              className="text-primary underline"
+              onClick={() => {
+                setRecoveryCode(!recoveryCode)
+                setCode('')
+                login.reset()
+              }}
+            >
+              {t(
+                recoveryCode
+                  ? 'twoFactor.useAuthenticator'
+                  : 'twoFactor.useRecovery',
+              )}
+            </button>
+          </>
+        ) : (
+          <>
+            <label className="block">
+              {t('auth.email')}
+              <input
+                className="field mt-2"
+                type="email"
+                autoComplete="username"
+                required
+                maxLength={256}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </label>
+            <label className="block">
+              {t('auth.password')}
+              <input
+                className="field mt-2"
+                type="password"
+                autoComplete="current-password"
+                required
+                maxLength={128}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </label>
+          </>
+        )}
         {login.isError && (
           <p role="alert" className="text-danger">
             {t(
-              login.error.message === 'rate' ? 'auth.rate' : 'auth.loginError',
+              login.error.message === 'rate'
+                ? 'auth.rate'
+                : twoFactor
+                  ? 'twoFactor.loginError'
+                  : 'auth.loginError',
             )}
           </p>
         )}
@@ -77,6 +142,23 @@ export default function LoginPage() {
           {login.isPending ? t('auth.loading') : t('auth.login')}
         </button>
       </form>
+      {twoFactor && (
+        <button
+          type="button"
+          className="mt-4 text-primary underline"
+          onClick={() => {
+            setTwoFactor(false)
+            setCode('')
+            setRecoveryCode(false)
+            login.reset()
+          }}
+        >
+          {t('twoFactor.restart')}
+        </button>
+      )}
+      <Link className="mt-5 block text-primary" to="/forgot-password">
+        {t('auth.forgotPassword')}
+      </Link>
       <Link className="mt-5 inline-block text-primary" to="/register">
         {t('auth.register')}
       </Link>

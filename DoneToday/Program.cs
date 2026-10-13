@@ -12,6 +12,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDoneTodayIdentity();
+builder.Services.AddDoneTodayGoogle(builder.Configuration);
 builder.Services.AddAntiforgery(options =>
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always);
 builder.Services.AddRateLimiter(options =>

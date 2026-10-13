@@ -12,6 +12,10 @@ import ConfirmEmailPage from './pages/ConfirmEmailPage'
 import LoginPage from './pages/LoginPage'
 import AuthLayout from './layout/AuthLayout'
 import RequireAuth from './components/RequireAuth'
+import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
+import TwoFactorPage from './pages/TwoFactorPage'
+import ConnectionsPage from './pages/ConnectionsPage'
 
 export default function App() {
   const { t } = useTranslation()
@@ -19,6 +23,8 @@ export default function App() {
     <Routes>
       <Route element={<AuthLayout />}>
         <Route path="login" element={<LoginPage />} />
+        <Route path="forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="reset-password" element={<ResetPasswordPage />} />
         <Route path="register" element={<RegisterPage />} />
         <Route path="confirm-email" element={<ConfirmEmailPage />} />
       </Route>
@@ -32,6 +38,8 @@ export default function App() {
           <Route path="habits/:id/edit" element={<HabitFormPage />} />
           <Route path="progress" element={<ProgressPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="settings/security" element={<TwoFactorPage />} />
+          <Route path="settings/connections" element={<ConnectionsPage />} />
           <Route
             path="*"
             element={

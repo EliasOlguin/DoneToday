@@ -101,7 +101,7 @@ Stop the running API before `dotnet test` if Windows reports locked build files.
 
 ### Current scope
 
-This is a development MVP. It supports local email/password authentication; account-based preferences, password recovery, optional 2FA and external providers are still pending. Theme and language preferences are stored per browser. Statistics currently cover the current week; custom icons, month/year views, and configurable start/end dates from the design reference are not implemented.
+This is a development MVP. It supports local email/password authentication; Password recovery is supported; Optional authenticator 2FA is supported; Google sign-in and explicit linking are supported; account-based preferences and Microsoft sign-in are still pending. Theme and language preferences are stored per browser. Statistics currently cover the current week; custom icons, month/year views, and configurable start/end dates from the design reference are not implemented.
 
 For frontend structure, editor settings, and adding translations, see [the frontend README](DoneToday.Web/README.md).
 
@@ -204,6 +204,6 @@ Si Windows informa que los archivos de compilación están bloqueados, detené l
 
 ### Alcance actual
 
-Es un MVP de desarrollo. Ya admite autenticación con email/contraseña; faltan preferencias por cuenta, recuperación de contraseña, segundo factor opcional y proveedores externos. El idioma y el tema se guardan por navegador. Las estadísticas muestran la semana actual; los iconos personalizados, las vistas mensual/anual y las fechas de inicio/fin configurables de la referencia visual todavía no están implementados.
+Es un MVP de desarrollo. Ya admite autenticación con email/contraseña; ya admite recuperación de contraseña; ya admite segundo factor opcional; ya admite acceso con Google y vinculación explícita; faltan preferencias por cuenta y Microsoft. El idioma y el tema se guardan por navegador. Las estadísticas muestran la semana actual; los iconos personalizados, las vistas mensual/anual y las fechas de inicio/fin configurables de la referencia visual todavía no están implementados.
 
 Para la estructura del frontend, configuración del editor y nuevas traducciones, consultá [el README del frontend](DoneToday.Web/README.md).

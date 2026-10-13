@@ -1,9 +1,11 @@
+import PasswordRequirements from '../components/PasswordRequirements'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMutation } from '@tanstack/react-query'
 import { authPost } from '../api/auth'
 import { Link } from 'react-router'
+import GoogleButton from '../components/GoogleButton'
 
 export default function RegisterPage() {
   const { t } = useTranslation()
@@ -27,16 +29,10 @@ export default function RegisterPage() {
     if (password === confirmation) register.mutate()
   }
   const error = register.error ?? resend.error
-  const passwordRequirements = [
-    { key: 'auth.passwordLength', met: password.length >= 12 },
-    { key: 'auth.passwordUppercase', met: /[A-Z]/.test(password) },
-    { key: 'auth.passwordLowercase', met: /[a-z]/.test(password) },
-    { key: 'auth.passwordNumber', met: /[0-9]/.test(password) },
-    { key: 'auth.passwordSpecial', met: /[^A-Za-z0-9]/.test(password) },
-  ] as const
   return (
     <section className="mx-auto max-w-md">
       <h1 className="page-title">{t('auth.register')}</h1>
+      <GoogleButton />
       <Link className="mt-3 inline-block text-primary" to="/login">
         {t('auth.login')}
       </Link>
@@ -80,25 +76,7 @@ export default function RegisterPage() {
               onChange={(e) => setPassword(e.target.value)}
             />
           </label>
-          <ul id="password-help" className="space-y-2 text-sm">
-            {passwordRequirements.map(({ key, met }) => (
-              <li
-                key={key}
-                className={`flex items-center gap-2 transition-colors ${met ? 'text-success' : 'text-muted'}`}
-              >
-                <span
-                  aria-hidden="true"
-                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-current text-xs"
-                >
-                  {met ? '✓' : '•'}
-                </span>
-                <span>{t(key)}</span>
-                <span className="sr-only">
-                  {t(met ? 'auth.requirementMet' : 'auth.requirementPending')}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <PasswordRequirements password={password} />
           <label className="block">
             {t('auth.repeatPassword')}
             <input

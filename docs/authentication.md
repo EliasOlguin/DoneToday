@@ -47,7 +47,7 @@ dotnet run --project tools/EmailSmokeTest -p:UseAppHost=false -p:OutputPath=bin/
 
 This sends a sample message to `mail-test@example.test`, without creating an account or changing the database. Its token is deliberately fictitious. To test a real account, open `/register`, submit the form, open the email in Mailpit and click the confirmation button on the app page.
 
-Next: password recovery, optional two-factor authentication and external providers. Google/Microsoft will require app registration credentials before their flows can be tested. Emails currently use English; the web interface supports all three languages.
+Google is the only external provider enabled for now; Microsoft is deferred. Google/Microsoft will require app registration credentials before their flows can be tested. Emails currently use English; the web interface supports all three languages.
 
 ## Español
 
@@ -96,7 +96,7 @@ dotnet run --project tools/EmailSmokeTest -p:UseAppHost=false -p:OutputPath=bin/
 
 Envía un mensaje de ejemplo a `mail-test@example.test`, sin crear una cuenta ni cambiar la base. Su token es ficticio. Para probar una cuenta real, abrí `/register`, enviá el formulario, abrí el correo en Mailpit y pulsá el botón de confirmación en la página de la app.
 
-Siguiente paso: recuperación de contraseña, segundo factor opcional y proveedores externos. Para probar Google/Microsoft necesitaremos las credenciales de registro de sus aplicaciones. Los correos se envían en inglés por ahora; la interfaz web admite los tres idiomas.
+Google es el único proveedor externo habilitado por ahora; Microsoft queda postergado. Para probar Google/Microsoft necesitaremos las credenciales de registro de sus aplicaciones. Los correos se envían en inglés por ahora; la interfaz web admite los tres idiomas.
 
 ## Registration checks / Pruebas de registro
 
@@ -119,6 +119,47 @@ PowerShell 7 integration test (creates two fictitious accounts and one habit in 
 ```
 
 Authentication POST requests require the token from `GET /api/auth/csrf` in `X-CSRF-TOKEN`. Each IP is limited to 20 registration, confirmation or login requests per minute. Confirmation requires an explicit button click, so visiting a link alone does not confirm an account. Configure `Authentication:FrontendUrl` with the trusted frontend origin; production requires HTTPS. / Los POST de autenticación requieren el token de `GET /api/auth/csrf` en `X-CSRF-TOKEN`. Cada IP tiene un límite de 20 peticiones de registro, confirmación o login por minuto. Confirmar requiere pulsar un botón; visitar el enlace no confirma la cuenta. Configurá `Authentication:FrontendUrl` con el origen confiable del frontend; producción requiere HTTPS.
+
+## Password recovery / Recuperación de contraseña
+
+Use **Forgot password?** on the login page. A confirmed account with a local password receives an email linking to `/reset-password`. Requests return the same message for unknown, unconfirmed and external-only accounts. The reset token expires after one hour and becomes invalid after a successful password reset. New passwords follow the registration requirements. Existing sessions are rejected on their next API request; security-stamp validation runs on every authenticated request, which adds a database check. Reset does not sign the user in automatically. Confirmation-token lifetime is unchanged.
+
+Usá **¿Olvidaste tu contraseña?** desde el login. Las cuentas confirmadas con contraseña local reciben un enlace a `/reset-password`. La solicitud devuelve el mismo mensaje para cuentas inexistentes, sin confirmar o que solo usan un proveedor externo. El token vence en una hora y deja de ser válido después de restablecer la contraseña. La nueva contraseña cumple los mismos requisitos del registro. Las sesiones anteriores se rechazan en su siguiente petición a la API; validar el security stamp en cada petición autenticada añade una consulta a la base. Restablecer no inicia sesión automáticamente. La duración del token de confirmación no cambia.
+
+PowerShell 7 integration test, using a fictitious account / Prueba de integración con PowerShell 7 y una cuenta ficticia:
+
+```powershell
+./tools/test-password-reset.ps1 -ApiUrl https://localhost:7154
+```
+
+
+## Optional authenticator 2FA / Segundo factor opcional
+
+Open Settings → Two-factor authentication. Enter your password, scan the QR with a TOTP authenticator app (or enter the manual key), then verify its six-digit code. The QR is generated locally with `qrcode.react`. Save the ten recovery codes; each works once and they are shown only immediately after generation. Regenerating codes invalidates the previous set. Codes and setup keys are kept only in screen memory, never localStorage.
+
+Abrí Settings → Autenticación de dos factores. Ingresá tu contraseña, escaneá el QR con una app autenticadora TOTP (o ingresá la clave manual) y verificá su código de seis dígitos. El QR se genera localmente con `qrcode.react`. Guardá los diez códigos de recuperación; cada uno funciona una sola vez y se muestran únicamente al generarlos. Generar otros invalida los anteriores. Los códigos y la clave de configuración quedan solamente en memoria de la pantalla, nunca en localStorage.
+
+2FA is off by default. Enabled accounts complete login with their password and an authenticator or recovery code. The intermediate HttpOnly/Secure cookie expires after five minutes and does not authorize access to habits. Authenticator failures use Identity's temporary lockout; recovery attempts are also rate-limited. Managing 2FA requires the current password; disabling additionally accepts an authenticator code or an unused recovery code. Password recovery keeps 2FA enabled. No database migration is needed: existing Identity tables store this configuration.
+
+2FA viene desactivado. Las cuentas que lo activan completan el login con contraseña y un código de la app o de recuperación. La cookie intermedia HttpOnly/Secure vence en cinco minutos y no autoriza acceder a hábitos. Los errores del código de la app usan el bloqueo temporal de Identity; los intentos con recuperación también tienen límite de frecuencia. Administrar 2FA requiere la contraseña actual; desactivarlo acepta además un código de la app o de recuperación sin usar. Recuperar la contraseña conserva 2FA activo. No requiere migración: Identity ya tiene las tablas necesarias.
+
+PowerShell 7 test with a fictitious account / Prueba con PowerShell 7 y cuenta ficticia:
+
+```powershell
+./tools/test-two-factor.ps1 -ApiUrl https://localhost:7154
+```
+
+
+## Google sign-in / Acceso con Google
+
+Configure a Google OAuth Web application with `https://localhost:7154/signin-google` as its authorized redirect URI. Save `Authentication:Google:ClientId` and `Authentication:Google:ClientSecret` in user secrets, then restart the backend. The Google button appears only when both credentials are configured. The backend uses Microsoft's Google handler with PKCE and OAuth state/correlation validation. Login starts with a CSRF-protected POST. OAuth tokens are not stored in the browser or database.
+
+Configurá un cliente OAuth de Google de tipo Web application con `https://localhost:7154/signin-google` como URI de retorno autorizado. Guardá `Authentication:Google:ClientId` y `Authentication:Google:ClientSecret` en user secrets y reiniciá el backend. El botón aparece únicamente cuando ambas credenciales están configuradas. El backend usa el proveedor oficial de Microsoft con PKCE y validación de state/correlación. El acceso comienza con un POST protegido por CSRF. No se guardan tokens OAuth en el navegador ni en la base.
+
+Google must return a verified email. New emails create an Identity account without a local password. Matching an existing email does not link accounts: sign in first, then explicitly link under Settings → Connected accounts using the current password and, when enabled, an authenticator code. A Google identity cannot be linked to two DoneToday accounts. Linked users with app 2FA must still complete the second factor. Google-only accounts currently do not have the local-password management needed for app 2FA setup; adding a local password is a future step. Microsoft is not configured yet.
+
+Google debe devolver un email verificado. Los emails nuevos crean una cuenta de Identity sin contraseña local. Coincidir en el email no vincula cuentas: primero ingresá y después vinculá desde Configuración → Cuentas vinculadas, con contraseña actual y código de la app si hay 2FA. Una identidad de Google no puede vincularse a dos cuentas de DoneToday. Si la cuenta vinculada tiene 2FA, seguirá pidiendo el segundo factor. Las cuentas que solo usan Google todavía no tienen la gestión de contraseña local necesaria para configurar 2FA de la app; agregar contraseña local será una etapa posterior. Microsoft todavía no está configurado.
+
 
 ## Identity database / Base de Identity
 

@@ -12,7 +12,11 @@ export async function apiFetch(url: string, options: RequestInit = {}) {
   const response = await fetch(url, { ...options, headers })
   if (
     response.status === 401 &&
-    (!url.startsWith('/api/auth/') || url === '/api/auth/logout')
+    (!url.startsWith('/api/auth/') ||
+      url === '/api/auth/logout' ||
+      (url.startsWith('/api/auth/two-factor') &&
+        url !== '/api/auth/two-factor/login') ||
+      url === '/api/auth/external/connections')
   ) {
     window.dispatchEvent(new Event('session-expired'))
     throw new ApiError('auth.sessionExpired')

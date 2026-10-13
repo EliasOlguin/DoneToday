@@ -46,21 +46,16 @@ export default function SettingsPage() {
         {t('nav.settings')}
       </h1>
       <p className="mt-2 text-sm text-muted">{t('settings.tagline')}</p>
-      <section className="panel mt-4 space-y-3">
-        <h2 className="font-semibold">{t('auth.account')}</h2>
-        <p className="break-all text-sm text-muted">{session.data?.email}</p>
-        <button
-          className="btn-primary"
-          disabled={logout.isPending}
-          onClick={() => logout.mutate()}
-        >
-          {t('auth.logout')}
-        </button>
-        {logout.isError && (
-          <p role="alert" className="text-danger">
-            {t('auth.logoutError')}
+      <section className="panel mt-4 flex items-center gap-4">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+          <Icon name="user" className="h-6 w-6" />
+        </div>
+        <div className="min-w-0">
+          <h2 className="font-semibold">{t('auth.account')}</h2>
+          <p className="mt-1 break-all text-sm text-muted">
+            {session.data?.email}
           </p>
-        )}
+        </div>
       </section>
       <section className="panel mt-6">
         <h2 className="font-semibold">{t('settings.appearance')}</h2>
@@ -108,6 +103,35 @@ export default function SettingsPage() {
         <h2 className="font-semibold">{t('settings.daily')}</h2>
         <p className="mt-2 text-sm text-muted">{t('settings.dailyHelp')}</p>
       </section>
+      <section className="mt-6" aria-labelledby="security-title">
+        <h2 id="security-title" className="mb-3 text-lg font-semibold">
+          {t('settings.security')}
+        </h2>
+        <Link
+          to="/settings/security"
+          className="panel flex items-center gap-3 transition-colors hover:border-primary/40 hover:bg-elevated"
+        >
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <Icon name="shield" className="h-6 w-6" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold">
+              {t('twoFactor.title')}
+            </span>
+            <span className="mt-1 block text-xs leading-relaxed text-muted">
+              {t('twoFactor.help')}
+            </span>
+          </span>
+          <Icon name="arrow" className="h-5 w-5 shrink-0 text-muted" />
+        </Link>
+      </section>
+      <Link
+        to="/settings/connections"
+        className="panel mt-4 flex items-center justify-between gap-3 text-sm font-semibold"
+      >
+        <span>{t('google.connections')}</span>
+        <Icon name="arrow" className="h-5 w-5 text-muted" />
+      </Link>
       <section className="mt-7" aria-labelledby="archived-title">
         <h2 id="archived-title" className="mb-3 text-lg font-semibold">
           {t('settings.archived')}
@@ -167,6 +191,22 @@ export default function SettingsPage() {
           </p>
         )}
       </section>
+      <div className="mt-8 border-t border-muted/15 pt-6">
+        <button
+          type="button"
+          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-danger/25 bg-danger/5 px-4 text-sm font-semibold text-danger transition-colors hover:bg-danger/10 disabled:opacity-50"
+          disabled={logout.isPending}
+          onClick={() => logout.mutate()}
+        >
+          <Icon name="logout" />
+          {t('auth.logout')}
+        </button>
+        {logout.isError && (
+          <p role="alert" className="mt-3 text-sm text-danger">
+            {t('auth.logoutError')}
+          </p>
+        )}
+      </div>
     </section>
   )
 }

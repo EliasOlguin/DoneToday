@@ -1,6 +1,9 @@
 import type { CSSProperties } from 'react'
 
 const paths = {
+  shield: 'M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3Zm-4 9 3 3 5-6',
+  user: 'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0M5 21v-2a7 7 0 0 1 14 0v2',
+  logout: 'M9 4H4v16h5m5-13 5 5-5 5M9 12h10',
   plus: 'M12 5v14M5 12h14',
   settings:
     'M9 3h6l1 3 3 1 2 5-2 5-3 1-1 3H9l-1-3-3-1-2-5 2-5 3-1 1-3Zm6 9a3 3 0 1 1-6 0 3 3 0 0 1 6 0',

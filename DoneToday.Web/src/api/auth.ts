@@ -18,7 +18,10 @@ export async function getSession(): Promise<Session | null> {
   return session
 }
 
-export async function authPost(path: string, body: object = {}) {
+export async function authPost<T = void>(
+  path: string,
+  body: object = {},
+): Promise<T> {
   const response = await apiFetch(`/api/auth/${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -29,4 +32,6 @@ export async function authPost(path: string, body: object = {}) {
     if (response.status === 503) throw new Error('email')
     throw new Error('invalid')
   }
+  const text = await response.text()
+  return text ? (JSON.parse(text) as T) : (undefined as T)
 }
