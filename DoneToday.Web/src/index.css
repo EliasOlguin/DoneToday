@@ -44,25 +44,17 @@ button[aria-busy='true']::before {
   border-radius: 50%;
   animation: loading-spin 0.8s linear infinite;
 }
-.network-progress {
-  animation: network-progress 1.4s ease-in-out infinite;
-}
 @keyframes loading-spin {
   to {
     transform: rotate(360deg);
   }
 }
-@keyframes network-progress {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(300%);
-  }
-}
 :focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 4px;
+}
+.loading-status:focus-visible {
+  outline: none;
 }
 
 :root[data-theme='light'] {

@@ -15,8 +15,9 @@ createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <BrowserRouter>
-          <App />
-          <NetworkActivity />
+          <NetworkActivity>
+            <App />
+          </NetworkActivity>
         </BrowserRouter>
       </ThemeProvider>
     </QueryClientProvider>

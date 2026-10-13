@@ -1,24 +1,55 @@
 import { useIsFetching, useIsMutating } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { useEffect, useRef } from 'react'
+import type { ReactNode } from 'react'
+import Icon from './ui/Icon'
 
-export default function NetworkActivity() {
+export default function NetworkActivity({ children }: { children: ReactNode }) {
   const fetching = useIsFetching()
   const mutating = useIsMutating()
   const { t } = useTranslation()
+  const busy = fetching > 0 || mutating > 0
+  const status = useRef<HTMLDivElement>(null)
 
-  if (!fetching && !mutating) return null
+  useEffect(() => {
+    if (!busy) return
+    const previousFocus = document.activeElement
+    status.current?.focus({ preventScroll: true })
+    return () => {
+      if (previousFocus instanceof HTMLElement && previousFocus.isConnected) {
+        previousFocus.focus({ preventScroll: true })
+      }
+    }
+  }, [busy])
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-0 z-50">
-      <div className="h-1 overflow-hidden bg-primary/20" aria-hidden="true">
-        <div className="network-progress h-full w-1/3 bg-primary" />
+    <>
+      <div inert={busy} aria-busy={busy}>
+        {children}
       </div>
-      <p
-        role="status"
-        className="mx-auto mt-2 w-fit rounded-full border border-primary/20 bg-surface px-4 py-2 text-xs font-medium text-foreground shadow-lg"
-      >
-        {t(mutating ? 'common.processing' : 'auth.loading')}
-      </p>
-    </div>
+      {busy && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/75 px-6 backdrop-blur-sm">
+          <div
+            ref={status}
+            tabIndex={-1}
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            className="loading-status flex flex-col items-center gap-5 rounded-3xl border border-muted/10 bg-surface px-12 py-10 shadow-xl"
+          >
+            <div
+              className="relative flex h-16 w-16 items-center justify-center"
+              aria-hidden="true"
+            >
+              <span className="absolute inset-0 animate-spin rounded-full border-[3px] border-primary/20 border-t-primary" />
+              <Icon name="sun" className="h-7 w-7 text-primary" />
+            </div>
+            <p className="text-base font-medium text-foreground">
+              {t(mutating ? 'common.processing' : 'auth.loading')}
+            </p>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
