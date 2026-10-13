@@ -44,7 +44,7 @@ Requirements: .NET SDK 10, Node.js 24 with npm, PostgreSQL, and the EF Core 10 C
    dotnet ef database update --project DoneToday
    ```
 
-   Authentication is not implemented yet. API controllers currently use `userId = 1`; a user with ID 1 must exist in the development database before creating habits. There is no automatic user seed.
+   Identity infrastructure is being integrated. Development now uses the separate `donetoday_auth` database while keeping the previous database intact. Registration/login endpoints are not implemented yet and controllers still use `userId = 1`. The new database starts empty; account creation will be managed by Identity. See [authentication preparation](docs/authentication.md).
 
 3. Trust the local development certificate and start the API:
 
@@ -147,7 +147,7 @@ Requisitos: .NET SDK 10, Node.js 24 con npm, PostgreSQL y la CLI de EF Core 10. 
    dotnet ef database update --project DoneToday
    ```
 
-   Todavía no hay autenticación. Los controladores usan `userId = 1`; debe existir un usuario con ID 1 en la base de desarrollo antes de crear hábitos. No hay una carga inicial automática de usuarios.
+   La infraestructura de Identity está en integración. Desarrollo usa la base separada `donetoday_auth` y conserva la anterior. Todavía no hay endpoints de registro/login y los controladores siguen usando `userId = 1`. La base nueva empieza vacía; Identity gestionará la creación de cuentas. Consultá [la preparación de autenticación](docs/authentication.md).
 
 3. Confiá en el certificado local de desarrollo e iniciá la API:
 
