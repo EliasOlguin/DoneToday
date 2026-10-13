@@ -1,3 +1,5 @@
+import { errorText } from '../api/errors'
+import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getTodayHabits } from '../api/today'
 import { completeHabit, undoHabitCompletion } from '../api/habits'
@@ -6,6 +8,7 @@ import Icon from '../components/ui/Icon'
 import WeekProgressCard from '../components/WeekProgressCard'
 
 export default function TodayPage() {
+  const { t, i18n } = useTranslation()
   const {
     data: habits,
     isPending,
@@ -25,11 +28,11 @@ export default function TodayPage() {
   const hour = new Date().getHours()
   const greeting =
     hour < 12
-      ? 'Good morning!'
+      ? t('today.morning')
       : hour < 18
-        ? 'Good afternoon!'
-        : 'Good evening!'
-  const date = new Intl.DateTimeFormat('en', {
+        ? t('today.afternoon')
+        : t('today.evening')
+  const date = new Intl.DateTimeFormat(i18n.resolvedLanguage, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
@@ -47,31 +50,35 @@ export default function TodayPage() {
       >
         {greeting}
       </h1>
-      <p className="mt-2 text-sm text-muted">Small steps. Big life.</p>
+      <p className="mt-2 text-sm text-muted">{t('today.tagline')}</p>
       <div className="mt-6">
         <WeekProgressCard />
       </div>
       <div className="mb-3 mt-7 flex items-center justify-between">
         <h2 className="text-xs font-semibold uppercase tracking-[0.15em] text-muted">
-          Today
+          {t('nav.today')}
         </h2>
         {habits && (
           <span className="text-xs text-muted">
-            {habits.filter((h) => h.isCompleted).length}/{habits.length} done
+            {t('today.done', {
+              count: habits.filter((h) => h.isCompleted).length,
+              completed: habits.filter((h) => h.isCompleted).length,
+              total: habits.length,
+            })}
           </span>
         )}
       </div>
       {isPending ? (
         <p role="status" className="text-sm text-muted">
-          Loading your habits...
+          {t('habits.loading')}
         </p>
       ) : isError ? (
         <p role="alert" className="text-sm text-danger">
-          Could not load your habits. Please try again later.
+          {t('errors.loadHabits')}
         </p>
       ) : habits.length === 0 ? (
         <p className="rounded-2xl bg-surface p-5 text-sm text-muted">
-          No habits scheduled for today.
+          {t('today.empty')}
         </p>
       ) : (
         <ul className="space-y-3">
@@ -99,13 +106,18 @@ export default function TodayPage() {
                   </h3>
                   <p className="mt-1 flex flex-wrap items-center gap-1 text-xs text-muted">
                     <Icon name="flame" className="h-3.5 w-3.5 text-warning" />
-                    Streak: {habit.currentStreak}
-                    <span className="ml-2">Best: {habit.bestStreak}</span>
+                    {t('today.streak', { count: habit.currentStreak })}
+                    <span className="ml-2">
+                      {t('today.best', { count: habit.bestStreak })}
+                    </span>
                   </p>
                 </div>
                 <button
                   type="button"
-                  aria-label={`${habit.isCompleted ? 'Undo completion for' : 'Complete'} ${habit.name}`}
+                  aria-label={t(
+                    habit.isCompleted ? 'today.undo' : 'today.complete',
+                    { name: habit.name },
+                  )}
                   aria-pressed={habit.isCompleted}
                   disabled={completionMutation.isPending}
                   onClick={() =>
@@ -131,7 +143,7 @@ export default function TodayPage() {
               {completionMutation.isError &&
                 completionMutation.variables?.id === habit.id && (
                   <p role="alert" className="mt-2 text-sm text-danger">
-                    {completionMutation.error.message}
+                    {errorText(completionMutation.error)}
                   </p>
                 )}
             </li>

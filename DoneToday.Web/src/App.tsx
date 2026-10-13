@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Link, Navigate, Route, Routes } from 'react-router'
 import AppLayout from './layout/AppLayout'
 import TodayPage from './pages/TodayPage'
@@ -8,6 +9,7 @@ import ProgressPage from './pages/ProgressPage'
 import SettingsPage from './pages/SettingsPage'
 
 export default function App() {
+  const { t } = useTranslation()
   return (
     <Routes>
       <Route element={<AppLayout />}>
@@ -23,9 +25,9 @@ export default function App() {
           path="*"
           element={
             <section>
-              <h1 className="page-title">Page not found</h1>
+              <h1 className="page-title">{t('common.notFound')}</h1>
               <Link to="/today" className="mt-4 inline-block text-primary">
-                Back to Today
+                {t('common.backToday')}
               </Link>
             </section>
           }

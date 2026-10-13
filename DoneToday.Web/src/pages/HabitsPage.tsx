@@ -1,11 +1,12 @@
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { getHabits } from '../api/habits'
 import { Link } from 'react-router'
+import { formatSchedule } from '../lib/format'
 import Icon from '../components/ui/Icon'
 
-const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-
 export default function HabitsPage() {
+  const { t } = useTranslation()
   const {
     data: habits,
     isPending,
@@ -14,23 +15,21 @@ export default function HabitsPage() {
   return (
     <section aria-labelledby="habits-title">
       <h1 id="habits-title" className="text-[28px] font-bold tracking-tight">
-        Habits
+        {t('nav.habits')}
       </h1>
-      <p className="mt-2 text-sm text-muted">
-        Build routines that work for you.
-      </p>
+      <p className="mt-2 text-sm text-muted">{t('habits.tagline')}</p>
       <div className="mt-6">
         {isPending ? (
           <p role="status" className="text-sm text-muted">
-            Loading your habits...
+            {t('habits.loading')}
           </p>
         ) : isError ? (
           <p role="alert" className="text-sm text-danger">
-            Could not load your habits. Please try again later.
+            {t('errors.loadHabits')}
           </p>
         ) : habits.length === 0 ? (
           <p className="rounded-2xl bg-surface p-5 text-sm text-muted">
-            You haven't created any habits yet.
+            {t('habits.empty')}
           </p>
         ) : (
           <ul className="space-y-3">
@@ -55,12 +54,7 @@ export default function HabitsPage() {
                       {habit.name}
                     </h2>
                     <p className="mt-1 text-xs text-muted">
-                      {habit.daysOfWeek.length === 7
-                        ? 'Every day'
-                        : [...habit.daysOfWeek]
-                            .sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7))
-                            .map((day) => dayNames[day])
-                            .join(', ')}
+                      {formatSchedule(habit.daysOfWeek)}
                     </p>
                     {habit.description && (
                       <p className="mt-2 break-words text-sm text-muted">

@@ -1,14 +1,16 @@
+import { useTranslation } from 'react-i18next'
 import { Link, NavLink, Outlet } from 'react-router'
 import Icon from '../components/ui/Icon'
 
 const navigation = [
-  { to: '/today', label: 'Today', icon: 'home' },
-  { to: '/habits', label: 'Habits', icon: 'list' },
-  { to: '/progress', label: 'Stats', icon: 'chart' },
-  { to: '/settings', label: 'Settings', icon: 'settings' },
+  { to: '/today', label: 'nav.today', icon: 'home' },
+  { to: '/habits', label: 'nav.habits', icon: 'list' },
+  { to: '/progress', label: 'nav.stats', icon: 'chart' },
+  { to: '/settings', label: 'nav.settings', icon: 'settings' },
 ] as const
 
 export default function AppLayout() {
+  const { t } = useTranslation()
   return (
     <div className="mx-auto min-h-dvh max-w-lg bg-background text-foreground">
       <header className="flex items-center gap-3 px-6 pb-3 pt-8">
@@ -18,7 +20,7 @@ export default function AppLayout() {
         </Link>
         <Link
           to="/habits/new"
-          aria-label="Create a habit"
+          aria-label={t('common.create')}
           className="ml-auto flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-background hover:opacity-90"
         >
           <Icon name="plus" />
@@ -28,7 +30,7 @@ export default function AppLayout() {
         <Outlet />
       </main>
       <nav
-        aria-label="Main navigation"
+        aria-label={t('nav.main')}
         className="fixed inset-x-0 bottom-0 z-10 mx-auto max-w-lg border-t border-muted/10 bg-surface/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur"
       >
         <div className="grid grid-cols-4 gap-2">
@@ -41,7 +43,7 @@ export default function AppLayout() {
               }
             >
               <Icon name={icon} />
-              <span>{label}</span>
+              <span>{t(label)}</span>
             </NavLink>
           ))}
         </div>

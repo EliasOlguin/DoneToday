@@ -1,7 +1,8 @@
+import { ApiError } from './errors'
 import type { WeeklyProgress } from '../types/WeeklyProgress'
 
 export async function getWeeklyProgress(): Promise<WeeklyProgress> {
   const response = await fetch('/api/Progress/week')
-  if (!response.ok) throw new Error('Could not load weekly progress.')
+  if (!response.ok) throw new ApiError('errors.progress')
   return response.json()
 }

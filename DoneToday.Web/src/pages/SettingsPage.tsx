@@ -1,12 +1,16 @@
+import { errorText } from '../api/errors'
+import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router'
 import { useContext } from 'react'
 import { ThemeContext } from '../context/theme'
 import { getArchivedHabits, restoreHabit } from '../api/habits'
 import { formatSchedule } from '../lib/format'
+import { languages } from '../i18n'
 import Icon from '../components/ui/Icon'
 
 export default function SettingsPage() {
+  const { t, i18n } = useTranslation()
   const { theme, setTheme } = useContext(ThemeContext)
   const client = useQueryClient()
   const archived = useQuery({
@@ -25,12 +29,12 @@ export default function SettingsPage() {
   return (
     <section aria-labelledby="settings-title">
       <h1 id="settings-title" className="page-title">
-        Settings
+        {t('nav.settings')}
       </h1>
-      <p className="mt-2 text-sm text-muted">Make room for your routines.</p>
+      <p className="mt-2 text-sm text-muted">{t('settings.tagline')}</p>
       <section className="panel mt-6">
-        <h2 className="font-semibold">Appearance</h2>
-        <p className="mt-1 text-sm text-muted">Choose your preferred theme.</p>
+        <h2 className="font-semibold">{t('settings.appearance')}</h2>
+        <p className="mt-1 text-sm text-muted">{t('settings.themeHelp')}</p>
         <div className="mt-4 grid grid-cols-2 gap-2">
           {(['dark', 'light'] as const).map((value) => (
             <button
@@ -40,41 +44,55 @@ export default function SettingsPage() {
               onClick={() => setTheme(value)}
               className={`min-h-11 rounded-xl text-sm font-medium ${theme === value ? 'bg-primary text-background' : 'bg-elevated text-muted'}`}
             >
-              {value === 'dark' ? 'Dark' : 'Light'}
+              {value === 'dark' ? t('settings.dark') : t('settings.light')}
             </button>
           ))}
         </div>
       </section>
       <section className="panel mt-4">
-        <h2 className="font-semibold">Language</h2>
-        <p className="mt-2 text-sm text-muted">English</p>
-        <p className="mt-1 text-xs text-muted">
-          More languages are coming later.
+        <h2 className="font-semibold">{t('settings.language')}</h2>
+        <label htmlFor="language" className="sr-only">
+          {t('settings.language')}
+        </label>
+        <select
+          id="language"
+          value={i18n.resolvedLanguage ?? 'en'}
+          onChange={(event) => void i18n.changeLanguage(event.target.value)}
+          className="field mt-3"
+        >
+          {languages.map((language) => (
+            <option
+              key={language.code}
+              value={language.code}
+              lang={language.code}
+            >
+              {language.label}
+            </option>
+          ))}
+        </select>
+        <p className="mt-3 text-xs leading-relaxed text-muted">
+          {t('settings.languageHelp')}
         </p>
       </section>
       <section className="panel mt-4">
-        <h2 className="font-semibold">Daily schedule</h2>
-        <p className="mt-2 text-sm text-muted">
-          Days reset at midnight UTC. Weekly progress starts on Monday.
-        </p>
+        <h2 className="font-semibold">{t('settings.daily')}</h2>
+        <p className="mt-2 text-sm text-muted">{t('settings.dailyHelp')}</p>
       </section>
       <section className="mt-7" aria-labelledby="archived-title">
         <h2 id="archived-title" className="mb-3 text-lg font-semibold">
-          Archived habits
+          {t('settings.archived')}
         </h2>
-        <p className="mb-4 text-sm text-muted">
-          Restore a habit whenever you're ready to return to it.
-        </p>
+        <p className="mb-4 text-sm text-muted">{t('settings.archiveHelp')}</p>
         {archived.isPending ? (
           <p role="status" className="text-muted">
-            Loading archived habits...
+            {t('settings.loading')}
           </p>
         ) : archived.isError ? (
           <p role="alert" className="text-danger">
-            {archived.error.message}
+            {errorText(archived.error)}
           </p>
         ) : archived.data.length === 0 ? (
-          <p className="panel text-sm text-muted">No archived habits.</p>
+          <p className="panel text-sm text-muted">{t('settings.empty')}</p>
         ) : (
           <ul className="space-y-3">
             {archived.data.map((habit) => (
@@ -98,8 +116,8 @@ export default function SettingsPage() {
                   className="min-h-11 rounded-xl px-3 text-sm font-medium text-primary disabled:opacity-50"
                 >
                   {restore.isPending && restore.variables === habit.id
-                    ? 'Restoring...'
-                    : 'Restore'}
+                    ? t('settings.restoring')
+                    : t('settings.restore')}
                 </button>
               </li>
             ))}
@@ -107,14 +125,14 @@ export default function SettingsPage() {
         )}
         {restore.isError && (
           <p role="alert" className="mt-3 text-sm text-danger">
-            {restore.error.message}
+            {errorText(restore.error)}
           </p>
         )}
         {restore.isSuccess && (
           <p role="status" className="mt-3 text-sm text-success">
-            Habit restored.{' '}
+            {t('settings.restored')}{' '}
             <Link to="/habits" className="underline">
-              View habits
+              {t('settings.view')}
             </Link>
           </p>
         )}

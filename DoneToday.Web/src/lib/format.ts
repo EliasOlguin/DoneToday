@@ -1,27 +1,38 @@
-export const days = [
-  { value: 1, label: 'Mon', name: 'Monday' },
-  { value: 2, label: 'Tue', name: 'Tuesday' },
-  { value: 3, label: 'Wed', name: 'Wednesday' },
-  { value: 4, label: 'Thu', name: 'Thursday' },
-  { value: 5, label: 'Fri', name: 'Friday' },
-  { value: 6, label: 'Sat', name: 'Saturday' },
-  { value: 0, label: 'Sun', name: 'Sunday' },
-]
+import i18n from '../i18n'
+
+export const days = [1, 2, 3, 4, 5, 6, 0].map((value) => ({ value }))
+
+export function formatWeekday(
+  value: number,
+  width: 'long' | 'short' = 'short',
+) {
+  return new Intl.DateTimeFormat(i18n.resolvedLanguage, {
+    weekday: width,
+    timeZone: 'UTC',
+  }).format(new Date(Date.UTC(2026, 0, 4 + value)))
+}
 
 export function formatSchedule(selected: number[]) {
   return selected.length === 7
-    ? 'Every day'
+    ? i18n.t('common.everyDay')
     : days
         .filter((day) => selected.includes(day.value))
-        .map((day) => day.label)
+        .map((day) => formatWeekday(day.value))
         .join(', ')
 }
 
 export function formatDate(date: string) {
-  return new Intl.DateTimeFormat('en', {
+  return new Intl.DateTimeFormat(i18n.resolvedLanguage, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
     timeZone: 'UTC',
   }).format(new Date(date.length === 10 ? `${date}T12:00:00Z` : date))
+}
+
+export function formatPercent(value: number) {
+  return new Intl.NumberFormat(i18n.resolvedLanguage, {
+    style: 'percent',
+    maximumFractionDigits: 0,
+  }).format(value / 100)
 }

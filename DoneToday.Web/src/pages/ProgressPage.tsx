@@ -1,11 +1,14 @@
+import { errorText } from '../api/errors'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
 import { getWeeklyProgress } from '../api/progress'
-import { formatDate } from '../lib/format'
+import { formatDate, formatPercent } from '../lib/format'
 import WeekProgressCard from '../components/WeekProgressCard'
 import Icon from '../components/ui/Icon'
 
 export default function ProgressPage() {
+  const { t, i18n } = useTranslation()
   const progress = useQuery({
     queryKey: ['progress', 'week'],
     queryFn: getWeeklyProgress,
@@ -13,37 +16,37 @@ export default function ProgressPage() {
   return (
     <section aria-labelledby="stats-title">
       <h1 id="stats-title" className="page-title">
-        Statistics
+        {t('common.statistics')}
       </h1>
-      <p className="mt-2 text-sm text-muted">Small steps add up.</p>
+      <p className="mt-2 text-sm text-muted">{t('stats.tagline')}</p>
       <div className="mt-6 inline-flex min-h-10 items-center rounded-xl bg-primary px-5 text-sm font-semibold text-background">
-        This week
+        {t('week.title')}
       </div>
       <div className="mt-4">
         <WeekProgressCard />
       </div>
       {progress.isPending ? (
         <p role="status" className="mt-6 text-muted">
-          Loading statistics...
+          {t('stats.loading')}
         </p>
       ) : progress.isError ? (
         <div className="panel mt-6">
           <p role="alert" className="text-sm text-danger">
-            {progress.error.message}
+            {errorText(progress.error)}
           </p>
           <button
             type="button"
             onClick={() => void progress.refetch()}
             className="mt-2 min-h-11 text-sm text-primary"
           >
-            Try again
+            {t('common.retry')}
           </button>
         </div>
       ) : (
         <>
           <section className="panel mt-4" aria-labelledby="daily-title">
             <h2 id="daily-title" className="text-sm font-semibold">
-              Daily completions
+              {t('stats.daily')}
             </h2>
             <p className="mt-1 text-xs text-muted">
               {formatDate(progress.data.startDate)} –{' '}
@@ -55,7 +58,7 @@ export default function ProgressPage() {
                 const rate = day.scheduled
                   ? (day.completed / day.scheduled) * 100
                   : 0
-                const label = new Intl.DateTimeFormat('en', {
+                const label = new Intl.DateTimeFormat(i18n.resolvedLanguage, {
                   weekday: 'short',
                   timeZone: 'UTC',
                 }).format(new Date(`${day.date}T12:00:00Z`))
@@ -77,25 +80,24 @@ export default function ProgressPage() {
                     <span className="sr-only">
                       {formatDate(day.date)}:{' '}
                       {future
-                        ? 'upcoming'
-                        : `${day.completed} of ${day.scheduled} scheduled habits completed`}
+                        ? t('stats.upcoming')
+                        : t('stats.daySummary', {
+                            completed: day.completed,
+                            total: day.scheduled,
+                          })}
                     </span>
                   </div>
                 )
               })}
             </div>
-            <p className="mt-4 text-xs text-muted">
-              Completed / scheduled. Upcoming days are excluded.
-            </p>
+            <p className="mt-4 text-xs text-muted">{t('stats.legend')}</p>
           </section>
           <section className="mt-7" aria-labelledby="breakdown-title">
             <h2 id="breakdown-title" className="mb-3 text-lg font-semibold">
-              Habit breakdown
+              {t('stats.breakdown')}
             </h2>
             {progress.data.habits.length === 0 ? (
-              <p className="panel text-sm text-muted">
-                Create your first habit to start tracking progress.
-              </p>
+              <p className="panel text-sm text-muted">{t('stats.empty')}</p>
             ) : (
               <ul className="overflow-hidden rounded-2xl border border-muted/10 bg-surface">
                 {progress.data.habits.map((habit) => (
@@ -119,7 +121,7 @@ export default function ProgressPage() {
                       </span>
                       <span className="w-10 text-right text-xs font-semibold text-success">
                         {habit.scheduled
-                          ? `${Math.round(habit.completionRate)}%`
+                          ? formatPercent(habit.completionRate)
                           : '—'}
                       </span>
                     </Link>
