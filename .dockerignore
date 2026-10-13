@@ -1,0 +1,16 @@
+.git
+.vs
+.vscode
+.local
+**/.vscode
+**/node_modules
+**/bin
+**/obj
+**/dist
+**/.env*
+**/*.pfx
+**/*.pem
+**/*.key
+DoneToday.Tests
+tools
+docs

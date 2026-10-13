@@ -2,10 +2,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 
 namespace DoneToday.Api.Data;
 
-public class AppDbContext : IdentityDbContext<User, IdentityRole<int>, int>
+public class AppDbContext : IdentityDbContext<User, IdentityRole<int>, int>, IDataProtectionKeyContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
@@ -13,6 +14,7 @@ public class AppDbContext : IdentityDbContext<User, IdentityRole<int>, int>
     }
 
     public DbSet<Habit> Habits => Set<Habit>();
+    public DbSet<DataProtectionKey> DataProtectionKeys { get; set; } = null!;
     public DbSet<HabitSchedule> HabitSchedules => Set<HabitSchedule>();
     public DbSet<HabitCompletion> HabitCompletions => Set<HabitCompletion>();
 

@@ -1,4 +1,5 @@
 # DoneToday
+Deployment preparation / Preparación de despliegue: [Render Free + Neon + Brevo](docs/deployment.md).
 
 [English](#english) · [Español](#español)
 

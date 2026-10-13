@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: donetoday
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_HTTP_PORTS
+        value: "8080"
+      - key: Database__MigrateOnStartup
+        value: "true"
+      - key: ConnectionStrings__AuthenticationConnection
+        sync: false
+      - key: DataProtection__CertificateBase64
+        sync: false
+      - key: Authentication__Google__ClientId
+        sync: false
+      - key: Authentication__Google__ClientSecret
+        sync: false
+      - key: Email__Provider
+        value: Brevo
+      - key: Email__ApiKey
+        sync: false
+      - key: Email__FromAddress
+        sync: false
+      - key: Email__FromName
+        value: DoneToday

@@ -27,7 +27,7 @@ public class AuthController(UserManager<User> users, SignInManager<User> signIn,
         var link = BuildEmailLink("/reset-password", user, token);
         try { await emailSender.SendPasswordResetLinkAsync(user, user.Email!, link); }
         catch (Exception exception) when (exception is IOException or MailKit.Net.Smtp.SmtpCommandException
-            or MailKit.Net.Smtp.SmtpProtocolException or System.Net.Sockets.SocketException)
+            or MailKit.Net.Smtp.SmtpProtocolException or System.Net.Sockets.SocketException or HttpRequestException or TaskCanceledException)
         {
             // Keep the response identical for existing and unknown accounts.
             return Ok();
@@ -153,7 +153,7 @@ public class AuthController(UserManager<User> users, SignInManager<User> signIn,
         var link = BuildEmailLink("/confirm-email", user, token);
         try { await emailSender.SendConfirmationLinkAsync(user, user.Email!, link); }
         catch (Exception exception) when (exception is IOException or MailKit.Net.Smtp.SmtpCommandException
-            or MailKit.Net.Smtp.SmtpProtocolException or System.Net.Sockets.SocketException)
+            or MailKit.Net.Smtp.SmtpProtocolException or System.Net.Sockets.SocketException or HttpRequestException or TaskCanceledException)
         {
             return StatusCode(503);
         }
