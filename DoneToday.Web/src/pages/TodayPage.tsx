@@ -11,11 +11,24 @@ import { getWeeklyProgress } from '../api/progress'
 import { formatPercent } from '../lib/format'
 import { useSession } from '../hooks/useSession'
 import { useNow } from '../hooks/useNow'
+import { useState } from 'react'
 
 export default function TodayPage() {
   const { t, i18n } = useTranslation()
-  const timeZone = useSession().data?.timeZoneId ?? 'UTC'
+  const session = useSession()
+  const timeZone = session.data?.timeZoneId ?? 'UTC'
   const now = useNow()
+  const localDay = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(now)
+  const [undo, setUndo] = useState<{
+    id: number
+    name: string
+    day: string
+  } | null>(null)
   const {
     data: habits,
     isPending,
@@ -51,12 +64,20 @@ export default function TodayPage() {
   const completionMutation = useMutation({
     mutationFn: ({ id, isCompleted }: { id: number; isCompleted: boolean }) =>
       isCompleted ? undoHabitCompletion(id) : completeHabit(id),
-    onSuccess: () =>
-      Promise.all([
+    onSuccess: async (_, variables) => {
+      if (variables.isCompleted) setUndo(null)
+      else
+        setUndo({
+          id: variables.id,
+          name: habits?.find((h) => h.id === variables.id)?.name ?? '',
+          day: localDay,
+        })
+      await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['today'] }),
         queryClient.invalidateQueries({ queryKey: ['progress'] }),
         queryClient.invalidateQueries({ queryKey: ['habit'] }),
-      ]),
+      ])
+    },
   })
   const hour = Number(
     new Intl.DateTimeFormat('en-GB', {
@@ -89,6 +110,11 @@ export default function TodayPage() {
           <h1 id="today-title" className="page-title mt-1 lg:text-5xl">
             {greeting}
           </h1>
+          {session.data?.displayName && (
+            <p className="mt-1 text-lg font-medium">
+              {session.data.displayName}
+            </p>
+          )}
           <p className="mt-2 text-sm text-muted">{t('today.tagline')}</p>
         </div>
         <Link
@@ -221,6 +247,31 @@ export default function TodayPage() {
           )}
         </div>
       </div>
+      {undo && undo.day === localDay && (
+        <div className="fixed bottom-24 left-1/2 z-30 flex w-[calc(100%-2rem)] max-w-md -translate-x-1/2 items-center gap-3 rounded-2xl border border-muted/20 bg-surface p-4 shadow-xl lg:bottom-6">
+          <p role="status" className="min-w-0 flex-1 break-words text-sm">
+            {t('today.completedNotice', { name: undo.name })}
+          </p>
+          <button
+            type="button"
+            className="min-h-11 shrink-0 px-2 text-sm font-semibold text-primary"
+            disabled={completionMutation.isPending}
+            onClick={() =>
+              completionMutation.mutate({ id: undo.id, isCompleted: true })
+            }
+          >
+            {t('today.undoAction')}
+          </button>
+          <button
+            type="button"
+            className="h-11 w-8 shrink-0 text-muted"
+            aria-label={t('common.dismiss')}
+            onClick={() => setUndo(null)}
+          >
+            ×
+          </button>
+        </div>
+      )}
     </section>
   )
 }

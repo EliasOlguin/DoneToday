@@ -4,6 +4,10 @@
 
 ## English
 
+### First release: 1.0.0
+
+The version shown in Settings comes from the root `VERSION` file; keep package.json/package-lock.json in sync when releasing. See the bilingual [CHANGELOG](../CHANGELOG.md). Version 1 adds saved manual ordering from Habits (mouse/touch handle and keyboard-accessible arrows), a completion notice with Undo, display-name editing, explicit account deletion and a monthly calendar in Stats. Ordering is applied after Save, including in Today; Cancel leaves the saved order unchanged. Undo remains available until dismissed, another action replaces it, navigation occurs or the local day changes. Monthly counts include currently active habits, valid schedule history and elapsed local dates; future dates do not count. Profile deletion is irreversible and removes account/habit/history records, with email, password and authenticator confirmation as applicable. Apply the `AddProfileAndHabitOrder` migration locally. Docker/Render includes the same release version.
+
 React and TypeScript frontend for DoneToday. The [project README](../README.md#english) describes database configuration, backend startup, API routes, and current scope.
 
 ### Development
@@ -97,6 +101,10 @@ npm run test:session
 ```
 
 ## Español
+
+### Primera versión: 1.0.0
+
+La versión que muestra Settings proviene del archivo raíz `VERSION`; mantené package.json/package-lock.json sincronizados al publicar. Consultá el [CHANGELOG](../CHANGELOG.md) bilingüe. La versión 1 agrega orden manual desde Habits (control de mouse/táctil y flechas accesibles por teclado), aviso de completado con Deshacer, edición del nombre de perfil, eliminación explícita de cuenta y calendario mensual en Stats. Guardar aplica el orden también en Today; Cancelar conserva el orden anterior. Deshacer queda disponible hasta cerrar el aviso, realizar otra acción que lo reemplace, salir de la pantalla o cambiar el día local. Los totales mensuales incluyen hábitos actualmente activos, historial de programación y días locales transcurridos; no cuentan fechas futuras. Eliminar la cuenta es irreversible y borra cuenta/hábitos/historial, con confirmación de email, contraseña y autenticador cuando corresponde. Aplicá localmente `AddProfileAndHabitOrder`. Docker/Render incluye la misma versión de entrega.
 
 Frontend de DoneToday en React y TypeScript. El [README del proyecto](../README.md#español) explica la configuración de la base de datos, el inicio del backend, las rutas de la API y el alcance actual.
 

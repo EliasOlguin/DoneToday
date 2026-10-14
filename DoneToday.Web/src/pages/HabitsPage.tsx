@@ -5,9 +5,12 @@ import { getHabits } from '../api/habits'
 import { Link } from 'react-router'
 import { formatSchedule } from '../lib/format'
 import Icon from '../components/ui/Icon'
+import { useState } from 'react'
+import HabitOrder from '../components/HabitOrder'
 
 export default function HabitsPage() {
   const { t } = useTranslation()
+  const [ordering, setOrdering] = useState(false)
   const {
     data: habits,
     isPending,
@@ -28,6 +31,18 @@ export default function HabitsPage() {
         </Link>
       </div>
       <p className="mt-2 text-sm text-muted">{t('habits.tagline')}</p>
+      {habits && habits.length > 1 && !ordering && (
+        <button
+          type="button"
+          className="mt-3 min-h-11 text-sm font-medium text-primary"
+          onClick={() => setOrdering(true)}
+        >
+          {t('order.title')}
+        </button>
+      )}
+      {ordering && habits && (
+        <HabitOrder habits={habits} close={() => setOrdering(false)} />
+      )}
       <div className="mt-6">
         {isPending ? (
           <p role="status" className="text-sm text-muted">
@@ -42,7 +57,9 @@ export default function HabitsPage() {
             {t('habits.empty')}
           </p>
         ) : (
-          <ul className="grid gap-3 lg:grid-cols-2 lg:gap-5">
+          <ul
+            className={`grid gap-3 lg:grid-cols-2 lg:gap-5 ${ordering ? 'hidden' : ''}`}
+          >
             {habits.map((habit) => (
               <li
                 key={habit.id}

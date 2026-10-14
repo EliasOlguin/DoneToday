@@ -35,6 +35,7 @@ public class TodayController : AuthenticatedController
                 !h.IsArchived)
             .Include(h => h.Schedules)
             .Include(h => h.Completions)
+            .OrderBy(h => h.SortOrder).ThenBy(h => h.CreatedAt).ThenBy(h => h.Id)
             .ToListAsync();
 
         var response = habits

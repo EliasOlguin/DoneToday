@@ -1,5 +1,6 @@
 FROM node:24-bookworm-slim AS frontend
 WORKDIR /src/DoneToday.Web
+COPY VERSION /src/VERSION
 COPY DoneToday.Web/package*.json ./
 RUN npm ci
 COPY DoneToday.Web/ ./
@@ -7,6 +8,7 @@ RUN npm run build
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS backend
 WORKDIR /src
+COPY VERSION Directory.Build.props ./
 COPY DoneToday/DoneToday.csproj DoneToday/
 RUN dotnet restore DoneToday/DoneToday.csproj
 COPY DoneToday/ DoneToday/

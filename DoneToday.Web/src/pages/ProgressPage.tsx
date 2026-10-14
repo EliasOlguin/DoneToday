@@ -9,6 +9,7 @@ import WeekProgressCard from '../components/WeekProgressCard'
 import Icon from '../components/ui/Icon'
 import DailyProgressChart from '../components/DailyProgressChart'
 import { useSession } from '../hooks/useSession'
+import MonthlyProgress from '../components/MonthlyProgress'
 
 export default function ProgressPage() {
   const { t } = useTranslation()
@@ -104,6 +105,7 @@ export default function ProgressPage() {
           </div>
         </>
       )}
+      <MonthlyProgress />
     </section>
   )
 }

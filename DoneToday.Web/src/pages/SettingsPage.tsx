@@ -10,16 +10,16 @@ import { formatSchedule } from '../lib/format'
 import LanguageSelector from '../components/LanguageSelector'
 import Icon from '../components/ui/Icon'
 import { authPost } from '../api/auth'
-import { useSession } from '../hooks/useSession'
 import { useNavigate } from 'react-router'
 import InstallApp from '../components/InstallApp'
 import TimeZoneSettings from '../components/TimeZoneSettings'
+import ProfileSettings from '../components/ProfileSettings'
+import { appVersion } from '../lib/version'
 
 export default function SettingsPage() {
   const { t } = useTranslation()
   const { theme, setTheme } = useContext(ThemeContext)
   const client = useQueryClient()
-  const session = useSession()
   const navigate = useNavigate()
   const logout = useMutation({
     mutationFn: () => authPost('logout'),
@@ -51,17 +51,7 @@ export default function SettingsPage() {
       <p className="mt-2 text-sm text-muted">{t('settings.tagline')}</p>
       <InstallApp />
       <TimeZoneSettings />
-      <section className="panel mt-4 flex items-center gap-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <Icon name="user" className="h-6 w-6" />
-        </div>
-        <div className="min-w-0">
-          <h2 className="font-semibold">{t('auth.account')}</h2>
-          <p className="mt-1 break-all text-sm text-muted">
-            {session.data?.email}
-          </p>
-        </div>
-      </section>
+      <ProfileSettings />
       <section className="panel mt-6">
         <h2 className="font-semibold">{t('settings.appearance')}</h2>
         <p className="mt-1 text-sm text-muted">{t('settings.themeHelp')}</p>
@@ -181,6 +171,10 @@ export default function SettingsPage() {
           </p>
         )}
       </section>
+      <ProfileSettings showDelete />
+      <p className="mt-8 text-center text-xs text-muted">
+        DoneToday · v{appVersion}
+      </p>
       <div className="mt-8 border-t border-muted/15 pt-6">
         <button
           type="button"

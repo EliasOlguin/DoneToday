@@ -132,7 +132,6 @@ PowerShell 7 integration test, using a fictitious account / Prueba de integraci�
 ./tools/test-password-reset.ps1 -ApiUrl https://localhost:7154
 ```
 
-
 ## Optional authenticator 2FA / Segundo factor opcional
 
 Open Settings → Two-factor authentication. Enter your password, scan the QR with a TOTP authenticator app (or enter the manual key), then verify its six-digit code. The QR is generated locally with `qrcode.react`. Save the ten recovery codes; each works once and they are shown only immediately after generation. Regenerating codes invalidates the previous set. Codes and setup keys are kept only in screen memory, never localStorage.
@@ -149,7 +148,6 @@ PowerShell 7 test with a fictitious account / Prueba con PowerShell 7 y cuenta f
 ./tools/test-two-factor.ps1 -ApiUrl https://localhost:7154
 ```
 
-
 ## Google sign-in / Acceso con Google
 
 Configure a Google OAuth Web application with `https://localhost:7154/signin-google` as its authorized redirect URI. Save `Authentication:Google:ClientId` and `Authentication:Google:ClientSecret` in user secrets, then restart the backend. The Google button appears only when both credentials are configured. The backend uses Microsoft's Google handler with PKCE and OAuth state/correlation validation. Login starts with a CSRF-protected POST. OAuth tokens are not stored in the browser or database.
@@ -159,7 +157,6 @@ Configurá un cliente OAuth de Google de tipo Web application con `https://local
 Google must return a verified email. New emails create an Identity account without a local password. Matching an existing email does not link accounts: sign in first, then explicitly link under Settings → Connected accounts using the current password and, when enabled, an authenticator code. A Google identity cannot be linked to two DoneToday accounts. Linked users with app 2FA must still complete the second factor. Google-only accounts currently do not have the local-password management needed for app 2FA setup; adding a local password is a future step. Microsoft is not configured yet.
 
 Google debe devolver un email verificado. Los emails nuevos crean una cuenta de Identity sin contraseña local. Coincidir en el email no vincula cuentas: primero ingresá y después vinculá desde Configuración → Cuentas vinculadas, con contraseña actual y código de la app si hay 2FA. Una identidad de Google no puede vincularse a dos cuentas de DoneToday. Si la cuenta vinculada tiene 2FA, seguirá pidiendo el segundo factor. Las cuentas que solo usan Google todavía no tienen la gestión de contraseña local necesaria para configurar 2FA de la app; agregar contraseña local será una etapa posterior. Microsoft todavía no está configurado.
-
 
 ## Identity database / Base de Identity
 
@@ -178,3 +175,9 @@ The check prints database names and record counts, never credentials. / La compr
 Habit, Today and Progress endpoints require authentication and filter by the user ID in the Identity cookie. All habit mutations and authentication POSTs require CSRF validation. The frontend redirects anonymous users to login and clears private query caches on logout, login or detected account changes.
 
 Los endpoints de hábitos, Today y Progress requieren autenticación y filtran por el ID de usuario de la cookie de Identity. Las modificaciones de hábitos y los POST de autenticación validan CSRF. El frontend redirige al login si falta sesión y limpia la caché privada al entrar, salir o detectar un cambio de cuenta.
+
+## Profile and account deletion / Perfil y eliminación de cuenta
+
+Profile POST endpoints also require authentication and CSRF. Display-name editing does not change email or login credentials. Permanent deletion at `/api/profile/delete` verifies the current account email, password when the account has one, and an authenticator code when 2FA is enabled. Google-only accounts do not need to create a local password. Identity deletion cascades the user's habits, schedules and completions and signs out the current browser. Subsequent authenticated requests from other windows/devices are rejected because the user no longer exists. The UI requires an explicit confirmation and clears cached private data after deletion. Only disposable accounts in an isolated PostgreSQL database were deleted during automated verification.
+
+Los POST de perfil también exigen autenticación y CSRF. Editar el nombre no cambia el email ni las credenciales. La eliminación permanente en `/api/profile/delete` verifica el email de la cuenta actual, contraseña cuando existe y código del autenticador cuando hay 2FA. Las cuentas solo de Google no necesitan crear una contraseña local. El borrado de Identity elimina en cascada los hábitos, días programados y completaciones del usuario y cierra la sesión actual. Las solicitudes posteriores de otras ventanas/dispositivos se rechazan porque el usuario ya no existe. La interfaz pide confirmación explícita y limpia los datos privados en caché. Las pruebas automatizadas solo eliminaron cuentas descartables en una base PostgreSQL aislada.

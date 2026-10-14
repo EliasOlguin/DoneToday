@@ -60,7 +60,8 @@ public class AuthController(UserManager<User> users, SignInManager<User> signIn,
     {
         Response.Headers.CacheControl = "no-store";
         var user = await users.GetUserAsync(User);
-        return user is null ? Unauthorized() : Ok(new { user.Id, user.Email, user.TimeZoneId });
+        return user is null ? Unauthorized() : Ok(new { user.Id, user.Email, user.TimeZoneId,
+            user.DisplayName, hasPassword = await users.HasPasswordAsync(user), user.TwoFactorEnabled });
     }
 
     [HttpPost("login")]

@@ -1,9 +1,18 @@
 # DoneToday
+
 Deployment preparation / Preparación de despliegue: [Render Free + Neon + Brevo](docs/deployment.md).
 
 [English](#english) · [Español](#español)
 
 ## English
+
+### Version 1.0.0
+
+The first release adds saved manual habit ordering, a completion notice with Undo, a monthly progress calendar, editable display names and permanent account deletion from Settings. Reordering uses a pointer handle (mouse/touch) or keyboard-accessible up/down buttons; Save applies the order to Habits and Today. Monthly totals include currently active habits and scheduled dates through the user's local today. Existing schedule history is respected.
+
+`VERSION` is the release source, read by the frontend and .NET build; `DoneToday.Web/package.json` and its lockfile use the same version. Settings displays it. [CHANGELOG](CHANGELOG.md) records releases. Corrections become `1.0.x`, new compatible features `1.x.0`. Apply `AddProfileAndHabitOrder` before running this version. Render applies pending migrations on startup. A Git release tag can identify the validated published build; updating version metadata alone does not publish anything.
+
+Account deletion requires an authenticated session, CSRF protection, the account email, the current password for password accounts and an authenticator code when 2FA is enabled. It removes Identity records, habits, schedules and completions and signs out the browser. Google-only accounts confirm their email without creating a local password. The action is irreversible and must be initiated and confirmed by the user.
 
 DoneToday is a mobile-first habit tracker built with ASP.NET Core and React. Create routines, choose their scheduled days, complete today's habits, and track streaks and weekly progress.
 
@@ -99,14 +108,27 @@ Stop the running API before `dotnet test` if Windows reports locked build files.
 | PATCH         | `/api/Habits/{id}/restore`  | Restore a habit                                      |
 | GET           | `/api/Habits/archived`      | List archived habits                                 |
 | GET           | `/api/Progress/week`        | Weekly totals, daily chart data, and habit breakdown |
+| GET           | `/api/Progress/month`       | Monthly calendar and totals (`year`, `month`)        |
+| POST          | `/api/Habits/order`         | Save the active habit order                          |
+| POST          | `/api/profile/name`         | Update the display name                              |
+| POST          | `/api/profile/time-zone`    | Save the account time zone                           |
+| POST          | `/api/profile/delete`       | Confirm and permanently delete the current account   |
 
 ### Current scope
 
-This is a development MVP. It supports local email/password authentication; Password recovery is supported; Optional authenticator 2FA is supported; Google sign-in and explicit linking are supported; account-based preferences and Microsoft sign-in are still pending. Theme and language preferences are stored per browser. Statistics currently cover the current week; custom icons, month/year views, and configurable start/end dates from the design reference are not implemented.
+Version 1 supports email/password authentication with confirmation and recovery, optional authenticator 2FA, Google sign-in and explicit linking, per-account time zone/display name/manual habit order, selectable habit icons, weekly and monthly statistics, and account deletion. Theme and language remain browser preferences. Microsoft sign-in, yearly statistics and configurable habit start/end dates are outside this release.
 
 For frontend structure, editor settings, and adding translations, see [the frontend README](DoneToday.Web/README.md).
 
 ## Español
+
+### Versión 1.0.0
+
+La primera entrega agrega orden manual guardado, aviso de completado con Deshacer, calendario mensual, nombre de perfil editable y eliminación permanente desde Settings. El orden se cambia con un control de arrastre (mouse/táctil) o botones accesibles para subir/bajar; Guardar lo aplica en Habits y Today. Los totales mensuales incluyen los hábitos actualmente activos y los días programados hasta el día local del usuario, respetando el historial de días.
+
+`VERSION` es la fuente de versión que leen el frontend y la compilación de .NET; `DoneToday.Web/package.json` y su lockfile tienen la misma versión. Se muestra en Settings. [CHANGELOG](CHANGELOG.md) registra las entregas. Las correcciones pasan a `1.0.x` y las nuevas funciones compatibles a `1.x.0`. Aplicá `AddProfileAndHabitOrder` antes de ejecutar esta versión. Render aplica migraciones pendientes al arrancar. Una etiqueta Git puede identificar la compilación publicada y validada; actualizar el número de versión no publica por sí solo.
+
+Eliminar la cuenta exige sesión autenticada, protección CSRF, el email de la cuenta, contraseña actual para cuentas con contraseña y código del autenticador cuando hay 2FA. Elimina los registros de Identity, hábitos, días programados y completaciones, y cierra la sesión del navegador. Las cuentas solo de Google confirman su email sin crear contraseña local. La acción es irreversible y debe iniciarla y confirmarla el usuario.
 
 DoneToday es una aplicación de hábitos pensada primero para móviles, construida con ASP.NET Core y React. Permite crear rutinas, elegir sus días, completar los hábitos de hoy y seguir las rachas y el progreso semanal.
 
@@ -202,9 +224,14 @@ Si Windows informa que los archivos de compilación están bloqueados, detené l
 | PATCH         | `/api/Habits/{id}/restore`  | Restaurar un hábito                                               |
 | GET           | `/api/Habits/archived`      | Listar hábitos archivados                                         |
 | GET           | `/api/Progress/week`        | Totales semanales, datos del gráfico diario y desglose por hábito |
+| GET           | `/api/Progress/month`       | Calendario y totales mensuales (`year`, `month`)                  |
+| POST          | `/api/Habits/order`         | Guardar el orden de los hábitos activos                           |
+| POST          | `/api/profile/name`         | Actualizar el nombre para mostrar                                 |
+| POST          | `/api/profile/time-zone`    | Guardar la zona horaria de la cuenta                              |
+| POST          | `/api/profile/delete`       | Confirmar y eliminar permanentemente la cuenta actual             |
 
 ### Alcance actual
 
-Es un MVP de desarrollo. Ya admite autenticación con email/contraseña; ya admite recuperación de contraseña; ya admite segundo factor opcional; ya admite acceso con Google y vinculación explícita; faltan preferencias por cuenta y Microsoft. El idioma y el tema se guardan por navegador. Las estadísticas muestran la semana actual; los iconos personalizados, las vistas mensual/anual y las fechas de inicio/fin configurables de la referencia visual todavía no están implementados.
+La versión 1 admite email/contraseña con confirmación y recuperación, 2FA opcional con autenticador, acceso con Google y vinculación explícita, zona horaria/nombre/orden manual por cuenta, iconos seleccionables, estadísticas semanales y mensuales y eliminación de cuenta. El idioma y el tema siguen siendo preferencias del navegador. Microsoft, estadísticas anuales y fechas de inicio/fin configurables de los hábitos quedan fuera de esta entrega.
 
 Para la estructura del frontend, configuración del editor y nuevas traducciones, consultá [el README del frontend](DoneToday.Web/README.md).

@@ -35,6 +35,15 @@ export async function getHabits(): Promise<Habit[]> {
   await ensureSuccess(response, 'errors.loadHabits')
   return response.json()
 }
+
+export async function saveHabitOrder(ids: number[]) {
+  const response = await apiFetch('/api/Habits/order', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids }),
+  })
+  await ensureSuccess(response, 'errors.order')
+}
 export async function getArchivedHabits(): Promise<Habit[]> {
   const response = await apiFetch('/api/Habits/archived')
   await ensureSuccess(response, 'errors.loadArchived')

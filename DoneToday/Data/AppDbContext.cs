@@ -26,6 +26,7 @@ public class AppDbContext : IdentityDbContext<User, IdentityRole<int>, int>, IDa
         modelBuilder.Entity<Habit>().Property(h => h.Icon).HasMaxLength(20).HasDefaultValue("habit");
         modelBuilder.Entity<User>().Property(u => u.Email).IsRequired();
         modelBuilder.Entity<User>().Property(u => u.TimeZoneId).HasMaxLength(100);
+        modelBuilder.Entity<User>().Property(u => u.DisplayName).HasMaxLength(60);
         modelBuilder.Entity<User>()
             .HasIndex(u => u.NormalizedEmail)
             .IsUnique();

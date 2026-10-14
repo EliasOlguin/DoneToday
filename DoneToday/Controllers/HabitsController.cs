@@ -31,6 +31,8 @@ public class HabitsController : AuthenticatedController
         var habit = new Habit
         {
             UserId = userId,
+            SortOrder = (await _context.Habits.Where(h => h.UserId == userId)
+                .MaxAsync(h => (int?)h.SortOrder) ?? -1) + 1,
             Name = request.Name,
             Description = request.Description,
             Color = request.Color,
@@ -70,6 +72,15 @@ public class HabitsController : AuthenticatedController
             response
             );
     }
+    [HttpPost("order")]
+    public async Task<IActionResult> SaveOrder(OrderHabitsRequest request)
+    {
+        var habits = await _context.Habits.Where(h => h.UserId == CurrentUserId && !h.IsArchived).ToListAsync();
+        if (!HabitOrderService.TryApply(habits, request.Ids)) return Conflict();
+        await _context.SaveChangesAsync();
+        return NoContent();
+    }
+
     [HttpGet("{id:int}")]
     public async Task<ActionResult<HabitResponse>> GetHabit(int id)
     {
@@ -115,7 +126,7 @@ public class HabitsController : AuthenticatedController
                 h.UserId == userId &&
                 !h.IsArchived)
             .Include(h => h.Schedules)
-            .OrderBy(h => h.CreatedAt)
+            .OrderBy(h => h.SortOrder).ThenBy(h => h.CreatedAt).ThenBy(h => h.Id)
             .ToListAsync();
 
         var response = habits

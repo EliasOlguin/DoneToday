@@ -23,6 +23,21 @@ public class ProgressController : AuthenticatedController
         _progressService = progressService;
     }
 
+    [HttpGet("month")]
+    public async Task<ActionResult<MonthlyProgressResult>> GetMonth(int? year, int? month)
+    {
+        var today = await _dates.GetTodayAsync(CurrentUserId);
+        var requestedYear = year ?? today.Year;
+        var requestedMonth = month ?? today.Month;
+        if (requestedYear is < 1900 or > 9998 || requestedMonth is < 1 or > 12) return BadRequest();
+        var start = new DateOnly(requestedYear, requestedMonth, 1);
+        if (start > today) return BadRequest();
+        var habits = await _context.Habits.AsNoTracking()
+            .Where(h => h.UserId == CurrentUserId && !h.IsArchived)
+            .Include(h => h.Schedules).Include(h => h.Completions).ToListAsync();
+        return Ok(MonthlyProgressService.Calculate(habits, start, today));
+    }
+
     [HttpGet("week")]
     public async Task<ActionResult<WeeklyProgressResponse>>
         GetWeeklyProgress()

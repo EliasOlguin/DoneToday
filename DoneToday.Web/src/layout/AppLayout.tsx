@@ -52,7 +52,10 @@ export default function AppLayout() {
               aria-label={t('auth.account')}
               className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 font-semibold uppercase text-primary"
             >
-              {session.data?.email.slice(0, 1) || <Icon name="user" />}
+              {(session.data?.displayName || session.data?.email)?.slice(
+                0,
+                1,
+              ) || <Icon name="user" />}
             </Link>
           </div>
           <Link

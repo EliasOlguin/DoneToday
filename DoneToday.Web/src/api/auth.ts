@@ -1,7 +1,14 @@
 import { apiFetch } from './client'
 import { detectTimeZone, saveTimeZone } from './profile'
 
-export type Session = { id: number; email: string; timeZoneId: string | null }
+export type Session = {
+  id: number
+  email: string
+  timeZoneId: string | null
+  displayName: string | null
+  hasPassword: boolean
+  twoFactorEnabled: boolean
+}
 let previousUserId: number | null | undefined
 let previousTimeZone: string | null | undefined
 
