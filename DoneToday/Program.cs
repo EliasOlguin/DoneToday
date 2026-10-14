@@ -43,6 +43,8 @@ else builder.Services.AddTransient<IEmailSender<User>, SmtpEmailSender>();
 // services
 builder.Services.AddScoped<StreakService>();
 builder.Services.AddScoped<ProgressService>();
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<UserDateService>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {

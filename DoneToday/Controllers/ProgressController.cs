@@ -11,13 +11,15 @@ namespace DoneToday.Api.Controllers;
 public class ProgressController : AuthenticatedController
 {
     private readonly AppDbContext _context;
+    private readonly UserDateService _dates;
     private readonly ProgressService _progressService;
 
     public ProgressController(
         AppDbContext context,
-        ProgressService progressService)
+        ProgressService progressService, UserDateService dates)
     {
         _context = context;
+        _dates = dates;
         _progressService = progressService;
     }
 
@@ -27,7 +29,7 @@ public class ProgressController : AuthenticatedController
     {
         var userId = CurrentUserId;
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = await _dates.GetTodayAsync(userId);
 
         var habits = await _context.Habits
             .AsNoTracking()

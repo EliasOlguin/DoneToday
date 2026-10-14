@@ -11,10 +11,12 @@ namespace DoneToday.Api.Controllers;
 public class TodayController : AuthenticatedController
 {
     private readonly AppDbContext _context;
+    private readonly UserDateService _dates;
     private readonly StreakService _streakService;
-    public TodayController(AppDbContext context,StreakService streakService)
+    public TodayController(AppDbContext context,StreakService streakService, UserDateService dates)
     {
         _context = context;
+        _dates = dates;
         _streakService = streakService;
     }
 
@@ -23,8 +25,8 @@ public class TodayController : AuthenticatedController
     {
         var userId = CurrentUserId;
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var dayOfWeek = DateTime.UtcNow.DayOfWeek;
+        var today = await _dates.GetTodayAsync(userId);
+        var dayOfWeek = today.DayOfWeek;
 
         var habits = await _context.Habits
             .AsNoTracking()

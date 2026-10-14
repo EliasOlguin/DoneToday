@@ -207,3 +207,24 @@ test('repeated focus events do not cancel or duplicate a pending session request
     client.clear()
   }
 })
+
+test('a time-zone change invalidates date-dependent queries without clearing the session', () => {
+  const client = createAppQueryClient()
+  const target = new EventTarget()
+  client.setQueryData(['session'], { id: 7, timeZoneId: 'Europe/Berlin' })
+  for (const key of ['today', 'progress', 'habit'])
+    client.setQueryData([key], ['old'])
+  client.setQueryData(['habits'], ['list'])
+  const cleanup = bindSessionEvents(client, target)
+  try {
+    target.dispatchEvent(new Event('time-zone-changed'))
+    for (const key of ['today', 'progress', 'habit'])
+      assert.equal(client.getQueryState([key]).isInvalidated, true)
+    assert.equal(client.getQueryState(['habits']).isInvalidated, false)
+    assert.equal(client.getQueryState(['session']).isInvalidated, false)
+    assert.equal(client.getQueryData(['session']).id, 7)
+  } finally {
+    cleanup()
+    client.clear()
+  }
+})

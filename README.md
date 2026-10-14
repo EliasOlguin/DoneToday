@@ -15,7 +15,7 @@ DoneToday is a mobile-first habit tracker built with ASP.NET Core and React. Cre
 - Settings: persistent dark/light theme and English, Spanish, or German interface.
 - Language detection: saved choice first, browser preferences second, English fallback.
 
-Habit names and descriptions keep the text entered by the user. The interface language does not change scheduling: dates use UTC and the week starts on Monday. Changes to scheduled days take effect tomorrow; the previous schedule remains in the history.
+Habit names and descriptions keep the text entered by the user. The interface language does not change scheduling: dates use the user's saved IANA time zone and the week starts on Monday. The browser time zone is saved on first sign-in and can be changed in Settings; another device does not overwrite it. Changes to scheduled days take effect tomorrow in that time zone; previous schedules and completion dates remain in the history. Event timestamps remain UTC. Existing accounts are initialized on their next sign-in; old UTC-based completion dates are not rewritten.
 
 ### Stack and repository
 
@@ -118,7 +118,7 @@ DoneToday es una aplicación de hábitos pensada primero para móviles, construi
 - Configuración: tema oscuro/claro e interfaz en inglés, español o alemán.
 - Detección de idioma: primero la elección guardada, después las preferencias del navegador y, como respaldo, inglés.
 
-Los nombres y las descripciones conservan el texto ingresado por el usuario. El idioma de la interfaz no cambia la programación: las fechas usan UTC y la semana empieza el lunes. Los cambios de días se aplican desde mañana y conservan el historial anterior.
+Los nombres y las descripciones conservan el texto ingresado por el usuario. El idioma de la interfaz no cambia la programación: las fechas usan la zona horaria IANA guardada por el usuario y la semana empieza el lunes. Detectamos la zona del navegador al iniciar sesión por primera vez; se puede cambiar en Settings y otro dispositivo no la sobrescribe. Los cambios de días se aplican desde mañana en esa zona y conservan el historial anterior. Las marcas de tiempo siguen en UTC. Las cuentas existentes se inicializan al volver a entrar; las fechas de las completaciones anteriores basadas en UTC no se reescriben.
 
 ### Tecnologías y repositorio
 

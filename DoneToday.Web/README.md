@@ -63,7 +63,11 @@ To add an interface message:
 3. Keep interpolation variables consistent across languages. For plural messages, use `_one` and `_other` keys and pass `count`.
 4. Run `npm run build`, `npm run lint`, and `npm run test:i18n`.
 
-Keys use dot-separated names in flat JSON objects (`keySeparator: false`). TypeScript checks keys against the English catalog. API failures use stable error keys and are translated when rendered, so an existing error can follow a language change. Dates and percentages use `Intl`; scheduling remains UTC. User-created content is not automatically translated.
+Keys use dot-separated names in flat JSON objects (`keySeparator: false`). TypeScript checks keys against the English catalog. API failures use stable error keys and are translated when rendered, so an existing error can follow a language change. Dates and percentages use `Intl`; Today and scheduling use the account's saved time zone. User-created content is not automatically translated.
+
+### Time zone
+
+On first authenticated session, `Intl.DateTimeFormat().resolvedOptions().timeZone` is saved through the CSRF-protected `POST /api/profile/time-zone` endpoint before habit pages load. `initializeOnly` prevents another device from replacing an existing choice. Settings offers a time-zone selector and a device-zone shortcut. The backend uses the saved zone for Today, schedule changes, completions, streaks and weekly progress. Today displays the same zone, date and greeting. Open tabs refresh date-dependent queries within 30 seconds of local midnight and when returning to the window; changing the preference also refreshes other tabs. Historical dates stay unchanged. Apply the `AddUserTimeZone` migration before running this version.
 
 ### Logo and web app installation
 
@@ -149,7 +153,11 @@ Para agregar un mensaje de interfaz:
 3. Conservá las mismas variables de interpolación en los tres idiomas. Para plurales, usá claves `_one` y `_other` y pasá `count`.
 4. Ejecutá `npm run build`, `npm run lint` y `npm run test:i18n`.
 
-Las claves tienen nombres separados por puntos dentro de objetos JSON planos (`keySeparator: false`). TypeScript las comprueba contra el catálogo en inglés. Los errores de la API usan claves estables y se traducen al mostrarlos, por lo que un error visible puede cambiar de idioma. Las fechas y los porcentajes usan `Intl`; la programación sigue en UTC. El contenido creado por el usuario no se traduce automáticamente.
+Las claves tienen nombres separados por puntos dentro de objetos JSON planos (`keySeparator: false`). TypeScript las comprueba contra el catálogo en inglés. Los errores de la API usan claves estables y se traducen al mostrarlos, por lo que un error visible puede cambiar de idioma. Las fechas y los porcentajes usan `Intl`; Today y la programación usan la zona guardada en la cuenta. El contenido creado por el usuario no se traduce automáticamente.
+
+### Zona horaria
+
+En la primera sesión autenticada guardamos `Intl.DateTimeFormat().resolvedOptions().timeZone` mediante `POST /api/profile/time-zone`, protegido por CSRF, antes de cargar los hábitos. `initializeOnly` evita que otro dispositivo reemplace una elección existente. Settings permite elegir la zona o seleccionar la del dispositivo. El backend la usa para Today, cambios de días, completaciones, rachas y progreso semanal. Today muestra esa misma zona, fecha y saludo. Las pestañas abiertas actualizan los datos dentro de los 30 segundos posteriores a la medianoche local y al volver a la ventana; cambiar la preferencia también actualiza las otras pestañas. El historial conserva sus fechas. Aplicá la migración `AddUserTimeZone` antes de ejecutar esta versión.
 
 ### Logo e instalación como web app
 

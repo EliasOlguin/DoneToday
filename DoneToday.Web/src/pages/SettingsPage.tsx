@@ -12,6 +12,7 @@ import { authPost } from '../api/auth'
 import { useSession } from '../hooks/useSession'
 import { useNavigate } from 'react-router'
 import InstallApp from '../components/InstallApp'
+import TimeZoneSettings from '../components/TimeZoneSettings'
 
 export default function SettingsPage() {
   const { t } = useTranslation()
@@ -48,6 +49,7 @@ export default function SettingsPage() {
       </h1>
       <p className="mt-2 text-sm text-muted">{t('settings.tagline')}</p>
       <InstallApp />
+      <TimeZoneSettings />
       <section className="panel mt-4 flex items-center gap-4">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
           <Icon name="user" className="h-6 w-6" />

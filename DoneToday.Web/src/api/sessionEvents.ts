@@ -42,10 +42,15 @@ export function bindSessionEvents(client: QueryClient, target: Window) {
     void client.cancelQueries(filter)
     client.removeQueries(filter)
   }
+  const refreshDates = () => {
+    for (const key of ['today', 'progress', 'habit'])
+      void client.invalidateQueries({ queryKey: [key] })
+  }
   target.addEventListener('focus', verify)
   target.addEventListener('pageshow', restored)
   target.addEventListener('session-expired', expire)
   target.addEventListener('account-changed', resetPrivateData)
+  target.addEventListener('time-zone-changed', refreshDates)
   target.addEventListener('session-updated', notify)
   channel?.addEventListener('message', receive)
   return () => {
@@ -53,6 +58,7 @@ export function bindSessionEvents(client: QueryClient, target: Window) {
     target.removeEventListener('pageshow', restored)
     target.removeEventListener('session-expired', expire)
     target.removeEventListener('account-changed', resetPrivateData)
+    target.removeEventListener('time-zone-changed', refreshDates)
     target.removeEventListener('session-updated', notify)
     channel?.removeEventListener('message', receive)
     channel?.close()

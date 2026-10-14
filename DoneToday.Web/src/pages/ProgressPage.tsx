@@ -7,9 +7,11 @@ import { formatDate, formatPercent } from '../lib/format'
 import WeekProgressCard from '../components/WeekProgressCard'
 import Icon from '../components/ui/Icon'
 import DailyProgressChart from '../components/DailyProgressChart'
+import { useSession } from '../hooks/useSession'
 
 export default function ProgressPage() {
   const { t } = useTranslation()
+  const timeZone = useSession().data?.timeZoneId ?? 'UTC'
   const progress = useQuery({
     queryKey: ['progress', 'week'],
     queryFn: getWeeklyProgress,
@@ -52,7 +54,8 @@ export default function ProgressPage() {
               </h2>
               <p className="mt-1 text-xs text-muted">
                 {formatDate(progress.data.startDate)} –{' '}
-                {formatDate(progress.data.endDate)} · UTC
+                {formatDate(progress.data.endDate)} ·{' '}
+                {timeZone.replaceAll('_', ' ')}
               </p>
               <DailyProgressChart progress={progress.data} />
               <p className="mt-4 text-xs text-muted">{t('stats.legend')}</p>

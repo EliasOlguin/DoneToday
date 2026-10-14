@@ -1,7 +1,9 @@
 import { apiFetch } from './client'
+import { detectTimeZone, saveTimeZone } from './profile'
 
-export type Session = { id: number; email: string }
+export type Session = { id: number; email: string; timeZoneId: string | null }
 let previousUserId: number | null | undefined
+let previousTimeZone: string | null | undefined
 
 export async function getSession(
   signal?: AbortSignal,
@@ -10,12 +12,23 @@ export async function getSession(
   if (!response.ok && response.status !== 401) throw new Error('request')
   const session: Session | null =
     response.status === 401 ? null : await response.json()
+  if (session && !session.timeZoneId) {
+    const preference = await saveTimeZone(detectTimeZone(), true, signal)
+    session.timeZoneId = preference.timeZoneId
+  }
   const changed =
     previousUserId !== undefined && previousUserId !== (session?.id ?? null)
   const firstAuthenticated = previousUserId === undefined && session !== null
   if (changed) {
     window.dispatchEvent(new Event('account-changed'))
   }
+  if (
+    !changed &&
+    previousTimeZone !== undefined &&
+    previousTimeZone !== session?.timeZoneId
+  )
+    window.dispatchEvent(new Event('time-zone-changed'))
+  previousTimeZone = session?.timeZoneId
   previousUserId = session?.id ?? null
   if (changed || firstAuthenticated)
     window.dispatchEvent(new Event('session-updated'))

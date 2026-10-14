@@ -8,9 +8,13 @@ import Icon from '../components/ui/Icon'
 import WeekProgressCard from '../components/WeekProgressCard'
 import { getWeeklyProgress } from '../api/progress'
 import { formatPercent } from '../lib/format'
+import { useSession } from '../hooks/useSession'
+import { useNow } from '../hooks/useNow'
 
 export default function TodayPage() {
   const { t, i18n } = useTranslation()
+  const timeZone = useSession().data?.timeZoneId ?? 'UTC'
+  const now = useNow()
   const {
     data: habits,
     isPending,
@@ -53,7 +57,13 @@ export default function TodayPage() {
         queryClient.invalidateQueries({ queryKey: ['habit'] }),
       ]),
   })
-  const hour = new Date().getHours()
+  const hour = Number(
+    new Intl.DateTimeFormat('en-GB', {
+      timeZone,
+      hour: 'numeric',
+      hourCycle: 'h23',
+    }).format(now),
+  )
   const greeting =
     hour < 12
       ? t('today.morning')
@@ -65,14 +75,15 @@ export default function TodayPage() {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
-    timeZone: 'UTC',
-  }).format(new Date())
+    timeZone,
+  }).format(now)
   return (
     <section aria-labelledby="today-title">
       <div className="flex items-center justify-between gap-6">
         <div>
           <p className="text-sm text-muted">
-            {date} <span className="text-xs">· UTC</span>
+            {date}{' '}
+            <span className="text-xs">· {timeZone.replaceAll('_', ' ')}</span>
           </p>
           <h1 id="today-title" className="page-title mt-1 lg:text-5xl">
             {greeting}

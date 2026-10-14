@@ -14,10 +14,12 @@ namespace DoneToday.Api.Controllers;
 public class HabitsController : AuthenticatedController
 {
     private readonly AppDbContext _context;
+    private readonly UserDateService _dates;
 
-    public HabitsController(AppDbContext context)
+    public HabitsController(AppDbContext context, UserDateService dates)
     {
         _context = context;
+        _dates = dates;
     }
 
     [HttpPost]
@@ -25,7 +27,7 @@ public class HabitsController : AuthenticatedController
         CreateHabitRequest request)
     {
         var userId = CurrentUserId;
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = await _dates.GetTodayAsync(userId);
         var habit = new Habit
         {
             UserId = userId,
@@ -156,7 +158,7 @@ public class HabitsController : AuthenticatedController
         habit.Description = request.Description;
         habit.Color = request.Color;
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = await _dates.GetTodayAsync(userId);
 
         var removedSchedules = HabitScheduleService.Update(habit, request.DaysOfWeek, today);
         _context.HabitSchedules.RemoveRange(removedSchedules);
@@ -188,7 +190,7 @@ public class HabitsController : AuthenticatedController
             .Include(h => h.Schedules).Include(h => h.Completions)
             .FirstOrDefaultAsync(h => h.Id == id && h.UserId == userId && !h.IsArchived);
         if (habit is null) return NotFound();
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = await _dates.GetTodayAsync(userId);
         var active = habit.Schedules.Where(s => s.ValidTo == null).ToList();
         return Ok(new HabitDetailResponse
         {
@@ -297,7 +299,7 @@ public class HabitsController : AuthenticatedController
             return NotFound();
         }
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = await _dates.GetTodayAsync(userId);
 
         var alreadyCompleted = await _context.HabitCompletions
             .AnyAsync(c =>
@@ -338,7 +340,7 @@ public class HabitsController : AuthenticatedController
             return NotFound();
         }
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = await _dates.GetTodayAsync(userId);
 
         var completion = await _context.HabitCompletions
             .FirstOrDefaultAsync(c =>
