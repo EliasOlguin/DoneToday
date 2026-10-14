@@ -8,7 +8,11 @@ export default function AppUpdate() {
   const [available, setAvailable] = useState<string | null>(null)
   const [dismissed, setDismissed] = useState<string | null>(null)
   const [confirming, setConfirming] = useState(false)
-  useEffect(() => bindUpdateChecks(window, appVersion, setAvailable), [])
+  useEffect(
+    () =>
+      bindUpdateChecks(window, appVersion, setAvailable, import.meta.env.PROD),
+    [],
+  )
   useEffect(() => {
     const mark = (event: Event) => {
       if (event.target instanceof HTMLElement) {

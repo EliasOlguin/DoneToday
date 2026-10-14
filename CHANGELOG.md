@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased / Sin publicar
+## 1.1.1 — 2026-10-14
+
+- Add ten clearly labeled Atomic Habits-inspired reflections; disable update polling in development and ignore older server releases in production. / Agrega diez reflexiones identificadas como inspiradas en Hábitos atómicos; desactiva el aviso de actualización en desarrollo e ignora versiones anteriores del servidor en producción.
+
+- Add a daily Today message with 70 entries in English, Spanish and German, following the account time zone, with credited book excerpts. / Agrega una frase diaria en Today con 70 entradas en inglés, español y alemán, según la zona horaria de la cuenta, con citas de libros atribuidas.
 
 - Add a short directional slide when navigating between application pages, respecting reduced motion. / Agrega una transición lateral breve entre páginas que respeta la preferencia de movimiento reducido.
 

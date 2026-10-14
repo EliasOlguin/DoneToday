@@ -4,7 +4,7 @@
 
 ## English
 
-### First release: 1.0.0
+### Current release: 1.1.1
 
 Stats defaults to All habits. Its habit selector applies to both weekly totals/charts and the monthly calendar, including previous months. Only active habits belonging to the signed-in account can be selected; another account's or unavailable habit ID returns 404. Today keeps its overall weekly summary. No database migration is required for filtering.
 
@@ -75,6 +75,12 @@ To add an interface message:
 
 Keys use dot-separated names in flat JSON objects (`keySeparator: false`). TypeScript checks keys against the English catalog. API failures use stable error keys and are translated when rendered, so an existing error can follow a language change. Dates and percentages use `Intl`; Today and scheduling use the account's saved time zone. User-created content is not automatically translated.
 
+Update checks run only in production builds. Development uses Vite hot updates and never polls for releases. Production notices require a newer semantic version; an older backend does not trigger a notice.
+
+### Daily motivation
+
+Today shows one of 70 messages below the greeting, selected by the calendar date in the account's saved time zone. Revisiting, reloading or switching language keeps the same message; it advances at local midnight (within the existing 30-second clock refresh, or on window focus) and repeats after 70 days. All three catalogs contain matching `motivation.01`–`motivation.70` keys. No external API, extra package or database migration is needed. The catalog contains 58 original DoneToday messages, two short book excerpts and ten reformulated reflections inspired by Atomic Habits. Book-related entries have linked credits; the ten reflections are explicitly labeled Inspired by rather than presented as literal quotations. Spanish and German excerpts are DoneToday translations, not quotations from published translated editions. Source details and editing guidance: [daily motivation](../docs/daily-motivation.md). Run `npm run test:motivation`.
+
 ### Time zone
 
 On first authenticated session, `Intl.DateTimeFormat().resolvedOptions().timeZone` is saved through the CSRF-protected `POST /api/profile/time-zone` endpoint before habit pages load. `initializeOnly` prevents another device from replacing an existing choice. Settings offers a time-zone selector and a device-zone shortcut. The backend uses the saved zone for Today, schedule changes, completions, streaks and weekly progress. Today displays the same zone, date and greeting. Open tabs refresh date-dependent queries within 30 seconds of local midnight and when returning to the window; changing the preference also refreshes other tabs. Historical dates stay unchanged. Apply the `AddUserTimeZone` migration before running this version.
@@ -108,7 +114,7 @@ npm run test:session
 
 ## Español
 
-### Primera versión: 1.0.0
+### Versión actual: 1.1.1
 
 Stats muestra Todos los hábitos por defecto. El selector se aplica a los totales/gráficos semanales y al calendario mensual, incluso en meses anteriores. Solo permite seleccionar hábitos activos de la cuenta autenticada; un ID ajeno o no disponible devuelve 404. Today mantiene su resumen semanal general. El filtro no requiere migración de base.
 
@@ -178,6 +184,12 @@ Para agregar un mensaje de interfaz:
 4. Ejecutá `npm run build`, `npm run lint` y `npm run test:i18n`.
 
 Las claves tienen nombres separados por puntos dentro de objetos JSON planos (`keySeparator: false`). TypeScript las comprueba contra el catálogo en inglés. Los errores de la API usan claves estables y se traducen al mostrarlos, por lo que un error visible puede cambiar de idioma. Las fechas y los porcentajes usan `Intl`; Today y la programación usan la zona guardada en la cuenta. El contenido creado por el usuario no se traduce automáticamente.
+
+El aviso de actualización solo se comprueba en compilaciones de producción. En desarrollo se usan las actualizaciones de Vite y no se consultan versiones. En producción se avisa solo por una versión semántica más reciente; un backend anterior no genera el cartel.
+
+### Frase diaria
+
+Today muestra una de 70 frases debajo del saludo, elegida según la fecha en la zona horaria guardada en la cuenta. Volver a entrar, recargar o cambiar de idioma conserva la misma frase; cambia al llegar la medianoche local (dentro del refresco de reloj existente de 30 segundos o al enfocar la ventana) y se repite después de 70 días. Los tres catálogos tienen las mismas claves `motivation.01`–`motivation.70`. No requiere API externa, paquetes nuevos ni migración de base de datos. Hay 58 mensajes originales de DoneToday, dos citas breves de libros y diez reflexiones reformuladas a partir de Hábitos atómicos. Las entradas de libros tienen enlaces a sus fuentes y las diez reflexiones se identifican como Inspirado en, sin presentarse como citas textuales. Las citas en español y alemán son traducciones de DoneToday, no fragmentos de ediciones traducidas publicadas. Fuentes y guía de edición: [frase diaria](../docs/daily-motivation.md). Ejecutá `npm run test:motivation`.
 
 ### Zona horaria
 

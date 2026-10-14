@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { bindUpdateChecks } from '../src/lib/updateCheck.ts'
+import { bindUpdateChecks, isNewerRelease } from '../src/lib/updateCheck.ts'
 
 const tick = () => new Promise((resolve) => setTimeout(resolve, 0))
 function surface(fetcher) {
@@ -43,6 +43,7 @@ test('detects a changed release with an uncached request, without reloading', as
 test('same version, old endpoints, malformed responses and network errors remain silent', async () => {
   for (const fetcher of [
     async () => ({ ok: true, json: async () => ({ version: '1.0.1' }) }),
+    async () => ({ ok: true, json: async () => ({ version: '1.0.0' }) }),
     async () => ({ ok: false }),
     async () => ({ ok: true, json: async () => ({ version: '<script>' }) }),
     async () => {
@@ -58,6 +59,50 @@ test('same version, old endpoints, malformed responses and network errors remain
     assert.deepEqual(updates, [])
     stop()
   }
+})
+
+test('disabled development checks make no requests and register no polling', async () => {
+  let calls = 0
+  const target = surface(async () => {
+    calls++
+    return { ok: true, json: async () => ({ version: '9.0.0' }) }
+  })
+  const stop = bindUpdateChecks(
+    target,
+    '1.1.1',
+    () => assert.fail('must not notify'),
+    false,
+  )
+  target.dispatchEvent(new Event('focus'))
+  target.dispatchEvent(new Event('online'))
+  target.document.dispatchEvent(new Event('visibilitychange'))
+  await tick()
+  assert.equal(calls, 0)
+  assert.equal(target.interval, undefined)
+  stop()
+})
+
+test('only newer semantic releases notify, including numeric and prerelease ordering', () => {
+  for (const [current, candidate, expected] of [
+    ['1.1.0', '1.0.1', false],
+    ['1.1.0', '1.1.0', false],
+    ['1.1.0', '1.1.1', true],
+    ['1.9.0', '1.10.0', true],
+    ['2.0.0', '1.99.99', false],
+    ['1.1.0', '1.1.0-beta.1', false],
+    ['1.1.0-beta.1', '1.1.0', true],
+    ['1.1.0-beta.2', '1.1.0-beta.10', true],
+    ['1.1.0-beta.10', '1.1.0-beta.2', false],
+    ['1.1.0-alpha', '1.1.0-beta', true],
+    ['1.1.0-beta', '1.1.0-beta.1', true],
+    ['1.1.0-beta', '1.1.0-beta', false],
+    ['1.1.0', 'invalid', false],
+  ])
+    assert.equal(
+      isNewerRelease(current, candidate),
+      expected,
+      `${current} -> ${candidate}`,
+    )
 })
 test('does not poll in hidden tabs, checks on return and removes listeners on cleanup', async () => {
   let calls = 0

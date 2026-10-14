@@ -1,7 +1,7 @@
 {
   "name": "donetoday-web",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.1.1",
   "type": "module",
   "scripts": {
     "predev": "node scripts/setup-https.mjs",
@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test:i18n": "node --test tests/i18n.test.mjs",
+    "test:motivation": "node --test tests/dailyMotivation.test.mjs",
     "test:query": "node --test tests/queryClient.test.mjs",
     "test:install": "node --test tests/install.test.mjs",
     "test:session": "node --test tests/sessionEvents.test.mjs"

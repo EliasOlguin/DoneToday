@@ -12,6 +12,7 @@ import { formatPercent } from '../lib/format'
 import { useSession } from '../hooks/useSession'
 import { useNow } from '../hooks/useNow'
 import { useState } from 'react'
+import DailyMotivation from '../components/DailyMotivation'
 
 export default function TodayPage() {
   const { t, i18n } = useTranslation()
@@ -102,7 +103,7 @@ export default function TodayPage() {
   return (
     <section aria-labelledby="today-title">
       <div className="flex items-center justify-between gap-6">
-        <div>
+        <div className="min-w-0">
           <p className="text-sm text-muted">
             {date}{' '}
             <span className="text-xs">· {timeZone.replaceAll('_', ' ')}</span>
@@ -115,7 +116,7 @@ export default function TodayPage() {
               {session.data.displayName}
             </p>
           )}
-          <p className="mt-2 text-sm text-muted">{t('today.tagline')}</p>
+          <DailyMotivation now={now} timeZone={timeZone} />
         </div>
         <Link
           to="/habits/new"
