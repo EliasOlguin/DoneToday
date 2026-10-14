@@ -1,4 +1,11 @@
 {
+  "auth.registerIntro": "Beginne mit deiner täglichen Routine.",
+  "auth.checkInboxTitle": "Prüfe deinen Posteingang",
+  "auth.spamHelp": "Keine E-Mail gefunden? Prüfe den Spamordner oder fordere unten eine neue E-Mail an.",
+  "auth.confirmIntro": "Bestätige deine E-Mail, um dein Konto zu aktivieren. Melde dich danach an und erstelle deine erste Gewohnheit.",
+  "auth.confirmedTitle": "E-Mail bestätigt",
+  "auth.confirmInvalidTitle": "Fordere einen neuen Link an",
+  "auth.requestNewLink": "Neuen Link anfordern",
   "auth.confirmationHelp": "Musst du deine E-Mail bestätigen?",
   "auth.or": "oder",
   "install.title": "DoneToday immer griffbereit",

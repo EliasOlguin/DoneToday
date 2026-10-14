@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "test:i18n": "node --test tests/i18n.test.mjs",
     "test:query": "node --test tests/queryClient.test.mjs",
-    "test:install": "node --test tests/install.test.mjs"
+    "test:install": "node --test tests/install.test.mjs",
+    "test:session": "node --test tests/sessionEvents.test.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.104.1",

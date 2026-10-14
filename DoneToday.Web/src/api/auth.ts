@@ -3,18 +3,22 @@ import { apiFetch } from './client'
 export type Session = { id: number; email: string }
 let previousUserId: number | null | undefined
 
-export async function getSession(): Promise<Session | null> {
-  const response = await fetch('/api/auth/me', { cache: 'no-store' })
+export async function getSession(
+  signal?: AbortSignal,
+): Promise<Session | null> {
+  const response = await fetch('/api/auth/me', { cache: 'no-store', signal })
   if (!response.ok && response.status !== 401) throw new Error('request')
   const session: Session | null =
     response.status === 401 ? null : await response.json()
-  if (
-    previousUserId !== undefined &&
-    previousUserId !== (session?.id ?? null)
-  ) {
+  const changed =
+    previousUserId !== undefined && previousUserId !== (session?.id ?? null)
+  const firstAuthenticated = previousUserId === undefined && session !== null
+  if (changed) {
     window.dispatchEvent(new Event('account-changed'))
   }
   previousUserId = session?.id ?? null
+  if (changed || firstAuthenticated)
+    window.dispatchEvent(new Event('session-updated'))
   return session
 }
 

@@ -1,15 +1,17 @@
 import { Link, Outlet, useLocation } from 'react-router'
 import LanguageSelector from '../components/LanguageSelector'
 import Logo from '../components/Logo'
+import ThemeToggle from '../components/ThemeToggle'
 
 export default function AuthLayout() {
-  const loginPage = useLocation().pathname === '/login'
+  const pathname = useLocation().pathname
+  const loginPage = ['/login', '/register', '/confirm-email'].includes(pathname)
   return (
     <div
       className={`mx-auto flex min-h-dvh flex-col px-5 py-6 text-foreground ${loginPage ? 'max-w-6xl sm:px-8' : 'max-w-lg'}`}
     >
       <header
-        className={`flex items-center justify-between gap-3 ${loginPage ? '' : 'mb-6'}`}
+        className={`flex flex-wrap items-center justify-between gap-3 ${loginPage ? '' : 'mb-6'}`}
       >
         <Link
           to="/today"
@@ -18,7 +20,10 @@ export default function AuthLayout() {
           <Logo />
           DoneToday
         </Link>
-        <LanguageSelector />
+        <div className="ml-auto flex items-center gap-2">
+          <ThemeToggle />
+          <LanguageSelector />
+        </div>
       </header>
       <main
         className={

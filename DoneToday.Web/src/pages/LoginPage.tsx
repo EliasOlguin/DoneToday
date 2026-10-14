@@ -189,7 +189,10 @@ export default function LoginPage() {
         </Link>
       )}
       {!twoFactor && (
-        <details className="mt-5 border-t border-muted/10 pt-4 text-sm">
+        <details
+          open={params.get('confirm') === '1'}
+          className="mt-5 border-t border-muted/10 pt-4 text-sm"
+        >
           <summary className="cursor-pointer text-muted">
             {t('auth.confirmationHelp')}
           </summary>

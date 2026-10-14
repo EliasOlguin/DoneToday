@@ -71,6 +71,10 @@ The editable brand mark is `public/brand/logo.svg`: a sun and check mark in Done
 
 After 15 seconds inside the authenticated app, a small installation suggestion appears. "Maybe later" postpones it for seven days on that browser. Settings includes the same installation controls. Supported browsers use their native `beforeinstallprompt` dialog after a user click; other browsers show instructions, including Safari's Add to Home Screen flow. Availability depends on the browser. No service worker or offline/private-data cache is added: DoneToday still needs an internet connection.
 
+### Sessions across windows
+
+Login, registration and password-recovery screens check the server session and redirect signed-in users to Today. Sessions are verified again on window focus, tab visibility changes and browser Back restoring a cached page. A `BroadcastChannel` notifies other same-origin tabs when an authoritative session check detects a sign-in, sign-out or account change. Messages contain only a change signal; each tab verifies its own cookie with `/api/auth/me`. Private query data is cleared when accounts change. Email confirmation and password-reset links remain accessible independently of these guest-only screens; confirming an email does not sign the user in.
+
 ### Editor and checks
 
 VS Code settings recommend ESLint and Prettier, validate while typing, and format on save. Use `dtcomp` or `dtprops` in a TSX file for the included component snippets. Prettier uses two spaces, single quotes, and no semicolons.
@@ -81,6 +85,7 @@ npm run lint
 npm run test:i18n
 npm run test:query
 npm run test:install
+npm run test:session
 ```
 
 ## Español
@@ -152,6 +157,10 @@ El logo editable está en `public/brand/logo.svg`: un sol y una marca de complet
 
 Después de 15 segundos dentro de la app autenticada, aparece una sugerencia discreta. "Más tarde" la pospone siete días en ese navegador. Settings también incluye los controles de instalación. Los navegadores compatibles muestran su diálogo nativo de `beforeinstallprompt` al pulsar el botón; los demás muestran instrucciones, incluida la opción Agregar a inicio en Safari. La disponibilidad depende del navegador. No se agrega un service worker ni una caché de datos privados: DoneToday sigue necesitando conexión a internet.
 
+### Sesiones entre ventanas
+
+Login, registro y recuperación de contraseña consultan la sesión del servidor y llevan a Today a quien ya inició sesión. La sesión vuelve a comprobarse al enfocar la ventana, volver a la pestaña o usar Atrás para restaurar una página en caché. Un `BroadcastChannel` avisa a las otras pestañas del mismo sitio cuando una comprobación detecta login, logout o cambio de cuenta. El mensaje contiene solamente un aviso; cada pestaña verifica su cookie con `/api/auth/me`. Los datos privados en caché se limpian al cambiar de cuenta. Los enlaces de confirmación de email y restablecimiento de contraseña siguen disponibles de forma independiente; confirmar un email no inicia sesión.
+
 ### Editor y verificaciones
 
 La configuración de VS Code recomienda ESLint y Prettier, valida mientras escribís y formatea al guardar. Usá `dtcomp` o `dtprops` en un archivo TSX para los snippets de componentes incluidos. Prettier usa dos espacios, comillas simples y no agrega punto y coma.
@@ -162,4 +171,5 @@ npm run lint
 npm run test:i18n
 npm run test:query
 npm run test:install
+npm run test:session
 ```

@@ -1,4 +1,11 @@
 {
+  "auth.registerIntro": "Empezá a construir tu rutina diaria.",
+  "auth.checkInboxTitle": "Revisá tu correo",
+  "auth.spamHelp": "¿No encontrás el email? Revisá spam o pedí otro con el botón de abajo.",
+  "auth.confirmIntro": "Confirmá tu email para activar tu cuenta. Después iniciá sesión para crear tu primer hábito.",
+  "auth.confirmedTitle": "Email confirmado",
+  "auth.confirmInvalidTitle": "Vamos a pedir un nuevo enlace",
+  "auth.requestNewLink": "Pedir un nuevo enlace",
   "auth.confirmationHelp": "¿Necesitás confirmar tu email?",
   "auth.or": "o",
   "install.title": "DoneToday, siempre a mano",

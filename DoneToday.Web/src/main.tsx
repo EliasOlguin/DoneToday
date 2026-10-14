@@ -8,6 +8,7 @@ import NetworkActivity from './components/NetworkActivity'
 import ThemeProvider from './context/ThemeProvider'
 import './index.css'
 import { createAppQueryClient } from './api/queryClient'
+import SessionSync from './components/SessionSync'
 
 const queryClient = createAppQueryClient()
 
@@ -17,6 +18,7 @@ createRoot(document.getElementById('root')!).render(
       <ThemeProvider>
         <BrowserRouter>
           <NetworkActivity>
+            <SessionSync />
             <App />
           </NetworkActivity>
         </BrowserRouter>

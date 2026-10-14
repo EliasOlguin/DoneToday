@@ -1,4 +1,11 @@
 {
+  "auth.registerIntro": "Start building your daily routine.",
+  "auth.checkInboxTitle": "Check your inbox",
+  "auth.spamHelp": "Can't find the email? Check your spam folder or request another one below.",
+  "auth.confirmIntro": "Confirm your email to activate your account. Then sign in to start your first habit.",
+  "auth.confirmedTitle": "Email confirmed",
+  "auth.confirmInvalidTitle": "Let's get you a new link",
+  "auth.requestNewLink": "Request a new link",
   "auth.confirmationHelp": "Need to confirm your email?",
   "auth.or": "or",
   "install.title": "Keep DoneToday close",
