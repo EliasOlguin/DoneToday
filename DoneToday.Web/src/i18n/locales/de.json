@@ -242,5 +242,13 @@
   "month.next": "Nächster Monat",
   "month.summary": "{{completed}} von {{scheduled}} geplanten Erledigungen",
   "month.day": "{{date}}: {{completed}} von {{scheduled}} erledigt",
-  "month.help": "Grün bedeutet, dass alle geplanten Gewohnheiten erledigt wurden. Zukünftige Tage zählen nicht. Diese Ansicht enthält deine derzeit aktiven Gewohnheiten."
+  "month.help": "Grün bedeutet, dass alle geplanten Gewohnheiten erledigt wurden. Zukünftige Tage zählen nicht. Diese Ansicht enthält deine derzeit aktiven Gewohnheiten.",
+  "update.title": "App-Update",
+  "update.available": "Version {{version}} ist verfügbar",
+  "update.help": "Aktualisiere, sobald du bereit bist, um die neuesten Änderungen zu laden.",
+  "update.reload": "Aktualisieren",
+  "update.later": "Später",
+  "update.unsaved": "Du hast ungespeicherte Änderungen. Neu laden und verwerfen?",
+  "update.discard": "Neu laden und verwerfen",
+  "update.keepEditing": "Weiter bearbeiten"
 }

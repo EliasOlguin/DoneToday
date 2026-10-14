@@ -42,7 +42,13 @@ export default function HabitOrder({
     })
   }
   return (
-    <section className="panel mt-5" aria-label={t('order.title')}>
+    <section
+      className="panel mt-5"
+      aria-label={t('order.title')}
+      data-unsaved={
+        order.map((h) => h.id).join(',') !== habits.map((h) => h.id).join(',')
+      }
+    >
       <h2 className="font-semibold">{t('order.title')}</h2>
       <p className="mt-2 text-sm text-muted">{t('order.help')}</p>
       <ul className="mt-4 space-y-2">

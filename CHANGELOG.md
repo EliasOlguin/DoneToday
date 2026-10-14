@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.1
+
+- Notify open tabs when another version is available, with Update and Later actions. Check every three minutes while visible and on returning to the page; no automatic reload. Unsaved forms/order changes require confirmation before updating. Polling failures do not interrupt the app.
+- Aviso de nueva versión en pestañas abiertas, con Actualizar y Más tarde. Consulta cada tres minutos mientras la página está visible y al volver; no recarga automáticamente. Los formularios y cambios de orden sin guardar piden confirmación antes de actualizar. Los fallos de consulta no interrumpen la app.
+
 ## 1.0.0
 
 First release of DoneToday / Primera versión de DoneToday.

@@ -242,5 +242,13 @@
   "month.next": "Next month",
   "month.summary": "{{completed}} of {{scheduled}} scheduled completions",
   "month.day": "{{date}}: {{completed}} of {{scheduled}} completed",
-  "month.help": "Green means all scheduled habits were completed. Future days are not counted. This view includes your currently active habits."
+  "month.help": "Green means all scheduled habits were completed. Future days are not counted. This view includes your currently active habits.",
+  "update.title": "App update",
+  "update.available": "Version {{version}} is available",
+  "update.help": "Update when you're ready to load the latest changes.",
+  "update.reload": "Update",
+  "update.later": "Later",
+  "update.unsaved": "You have unsaved changes. Reload and discard them?",
+  "update.discard": "Reload and discard",
+  "update.keepEditing": "Keep editing"
 }

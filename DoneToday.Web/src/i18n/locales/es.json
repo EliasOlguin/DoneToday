@@ -242,5 +242,13 @@
   "month.next": "Mes siguiente",
   "month.summary": "{{completed}} de {{scheduled}} completaciones programadas",
   "month.day": "{{date}}: {{completed}} de {{scheduled}} completados",
-  "month.help": "Verde indica que completaste todos los hábitos programados. No contamos días futuros. Esta vista incluye tus hábitos actualmente activos."
+  "month.help": "Verde indica que completaste todos los hábitos programados. No contamos días futuros. Esta vista incluye tus hábitos actualmente activos.",
+  "update.title": "Actualización de la app",
+  "update.available": "La versión {{version}} está disponible",
+  "update.help": "Actualizá cuando estés listo para cargar los últimos cambios.",
+  "update.reload": "Actualizar",
+  "update.later": "Más tarde",
+  "update.unsaved": "Tenés cambios sin guardar. ¿Recargar y descartarlos?",
+  "update.discard": "Recargar y descartar",
+  "update.keepEditing": "Seguir editando"
 }

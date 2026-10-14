@@ -38,7 +38,7 @@ export default function TimeZoneSettings() {
     },
   })
   return (
-    <section className="panel mt-4">
+    <section className="panel mt-4" data-unsaved={selected !== current}>
       <h2 className="font-semibold">{t('settings.timeZone')}</h2>
       <p className="mt-1 text-sm text-muted">{t('settings.timeZoneHelp')}</p>
       <label htmlFor="time-zone" className="mt-4 block text-sm font-medium">

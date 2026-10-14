@@ -47,6 +47,9 @@ export default function ProfileSettings({
     <>
       {!showDelete && (
         <form
+          data-unsaved={
+            name !== null && name.trim() !== (session.data?.displayName ?? '')
+          }
           className="panel mt-4"
           onSubmit={(event) => {
             event.preventDefault()

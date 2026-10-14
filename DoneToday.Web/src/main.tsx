@@ -9,6 +9,7 @@ import ThemeProvider from './context/ThemeProvider'
 import './index.css'
 import { createAppQueryClient } from './api/queryClient'
 import SessionSync from './components/SessionSync'
+import AppUpdate from './components/AppUpdate'
 
 const queryClient = createAppQueryClient()
 
@@ -19,6 +20,7 @@ createRoot(document.getElementById('root')!).render(
         <BrowserRouter>
           <NetworkActivity>
             <SessionSync />
+            <AppUpdate />
             <App />
           </NetworkActivity>
         </BrowserRouter>

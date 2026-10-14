@@ -118,7 +118,19 @@ function HabitForm({ habit }: { habit?: HabitDetail }) {
     })
   }
   return (
-    <form noValidate onSubmit={submit} aria-labelledby="form-title">
+    <form
+      noValidate
+      onSubmit={submit}
+      aria-labelledby="form-title"
+      data-unsaved={
+        name !== (habit?.name ?? '') ||
+        description !== (habit?.description ?? '') ||
+        color !== (habit?.color ?? '#b7a5ff') ||
+        icon !== (habit ? resolveHabitIcon(habit.icon) : 'habit') ||
+        [...selectedDays].sort().join(',') !==
+          [...(habit?.daysOfWeek ?? [])].sort().join(',')
+      }
+    >
       <div className="mb-7 flex items-center justify-between gap-3">
         <Link
           to={cancelTo}
