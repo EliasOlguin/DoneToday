@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased / Sin publicar
+
+- Show/hide password controls in login, registration and registration confirmation fields.
+- Controles para mostrar/ocultar la contraseña en login, registro y repetición de contraseña.
+
 ## 1.1.0
 
 - Filter weekly and monthly statistics by one active habit, with All habits as the default.

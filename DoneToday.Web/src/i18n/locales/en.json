@@ -254,5 +254,7 @@
   "stats.filter": "Statistics for",
   "stats.allHabits": "All habits",
   "stats.filterHelp": "Applies to weekly progress and the monthly calendar.",
-  "month.filteredHelp": "Only the selected habit is counted. Green means it was completed; future days are not counted."
+  "month.filteredHelp": "Only the selected habit is counted. Green means it was completed; future days are not counted.",
+  "auth.showPassword": "Show password",
+  "auth.hidePassword": "Hide password"
 }

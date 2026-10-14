@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { authPost, getSession } from '../api/auth'
 import GoogleButton from '../components/GoogleButton'
+import PasswordField from '../components/PasswordField'
 
 export default function LoginPage() {
   const { t } = useTranslation()
@@ -124,18 +125,14 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
               />
             </label>
-            <label className="block text-sm font-medium">
-              {t('auth.password')}
-              <input
-                className="field mt-2"
-                type="password"
-                autoComplete="current-password"
-                required
-                maxLength={128}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </label>
+            <PasswordField
+              label={t('auth.password')}
+              autoComplete="current-password"
+              required
+              maxLength={128}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
           </>
         )}
         {!twoFactor && (

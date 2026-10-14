@@ -1,4 +1,5 @@
 import PasswordRequirements from '../components/PasswordRequirements'
+import PasswordField from '../components/PasswordField'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -93,33 +94,25 @@ export default function RegisterPage() {
                 onChange={(e) => setEmail(e.target.value)}
               />
             </label>
-            <label className="block text-sm font-medium">
-              {t('auth.password')}
-              <input
-                className="field mt-2"
-                type="password"
-                autoComplete="new-password"
-                required
-                minLength={12}
-                maxLength={128}
-                pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{12,}"
-                aria-describedby="password-help"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </label>
+            <PasswordField
+              label={t('auth.password')}
+              autoComplete="new-password"
+              required
+              minLength={12}
+              maxLength={128}
+              pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{12,}"
+              aria-describedby="password-help"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
             <PasswordRequirements password={password} />
-            <label className="block text-sm font-medium">
-              {t('auth.repeatPassword')}
-              <input
-                className="field mt-2"
-                type="password"
-                autoComplete="new-password"
-                required
-                value={confirmation}
-                onChange={(e) => setConfirmation(e.target.value)}
-              />
-            </label>
+            <PasswordField
+              label={t('auth.repeatPassword')}
+              autoComplete="new-password"
+              required
+              value={confirmation}
+              onChange={(e) => setConfirmation(e.target.value)}
+            />
             {mismatch && (
               <p role="alert" className="text-danger">
                 {t('auth.mismatch')}

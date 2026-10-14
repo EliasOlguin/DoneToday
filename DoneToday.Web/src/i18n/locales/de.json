@@ -254,5 +254,7 @@
   "stats.filter": "Statistik für",
   "stats.allHabits": "Alle Gewohnheiten",
   "stats.filterHelp": "Gilt für Wochenfortschritt und Monatskalender.",
-  "month.filteredHelp": "Es zählt nur die ausgewählte Gewohnheit. Grün bedeutet erledigt; zukünftige Tage zählen nicht."
+  "month.filteredHelp": "Es zählt nur die ausgewählte Gewohnheit. Grün bedeutet erledigt; zukünftige Tage zählen nicht.",
+  "auth.showPassword": "Passwort anzeigen",
+  "auth.hidePassword": "Passwort verbergen"
 }
