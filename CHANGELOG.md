@@ -2,6 +2,12 @@
 
 ## Unreleased / Sin publicar
 
+- Add a short directional slide when navigating between application pages, respecting reduced motion. / Agrega una transición lateral breve entre páginas que respeta la preferencia de movimiento reducido.
+
+- Add subtle animated habit illustrations behind the main application, with fewer characters on mobile. / Agrega ilustraciones de hábitos animadas y sutiles al fondo de la aplicación, con menos personajes en móvil.
+
+- Add a responsive illustrated authentication layout with animated habit characters and reduced-motion support. / Agrega un diseño de acceso adaptable con personajes de hábitos animados y soporte de movimiento reducido.
+
 - Show/hide password controls in login, registration and registration confirmation fields.
 - Controles para mostrar/ocultar la contraseña en login, registro y repetición de contraseña.
 

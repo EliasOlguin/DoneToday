@@ -1,4 +1,7 @@
 {
+  "auth.habitsEyebrow": "Raum für dich",
+  "auth.habitsTitle": "Kleine Gewohnheiten.\nMehr du.",
+  "auth.habitsDescription": "Eine Seite. Ein Schritt.\nEin Tag nach dem anderen.",
   "auth.registerIntro": "Beginne mit deiner täglichen Routine.",
   "auth.checkInboxTitle": "Prüfe deinen Posteingang",
   "auth.spamHelp": "Keine E-Mail gefunden? Prüfe den Spamordner oder fordere unten eine neue E-Mail an.",

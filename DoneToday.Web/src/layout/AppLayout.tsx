@@ -5,6 +5,8 @@ import LanguageSelector from '../components/LanguageSelector'
 import { useSession } from '../hooks/useSession'
 import Logo from '../components/Logo'
 import InstallApp from '../components/InstallApp'
+import HabitCharacters from '../components/HabitCharacters'
+import PageTransition from '../components/PageTransition'
 
 const navigation = [
   { to: '/today', label: 'nav.today', icon: 'home' },
@@ -19,7 +21,8 @@ export default function AppLayout() {
   const { pathname } = useLocation()
   const wide = ['/today', '/habits', '/progress'].includes(pathname)
   return (
-    <div className="min-h-dvh bg-background text-foreground">
+    <div className="relative isolate min-h-dvh bg-background text-foreground">
+      <HabitCharacters background />
       <header className="lg:border-b lg:border-muted/10 lg:bg-surface">
         <div className="mx-auto flex max-w-lg items-center gap-3 px-6 pb-3 pt-8 lg:h-20 lg:max-w-7xl lg:justify-between lg:py-0 lg:px-10">
           <Link
@@ -70,7 +73,9 @@ export default function AppLayout() {
       <main
         className={`mx-auto max-w-lg px-5 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-5 sm:px-6 lg:px-10 lg:pt-12 lg:pb-12 ${wide ? 'lg:max-w-7xl' : 'lg:max-w-3xl'}`}
       >
-        <Outlet />
+        <PageTransition>
+          <Outlet />
+        </PageTransition>
       </main>
       <nav
         aria-label={t('nav.main')}

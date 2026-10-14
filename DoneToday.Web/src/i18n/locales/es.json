@@ -1,4 +1,7 @@
 {
+  "auth.habitsEyebrow": "Un espacio para vos",
+  "auth.habitsTitle": "Pequeños hábitos.\nMás de vos.",
+  "auth.habitsDescription": "Una página. Un paso.\nUn día a la vez.",
   "auth.registerIntro": "Empezá a construir tu rutina diaria.",
   "auth.checkInboxTitle": "Revisá tu correo",
   "auth.spamHelp": "¿No encontrás el email? Revisá spam o pedí otro con el botón de abajo.",
