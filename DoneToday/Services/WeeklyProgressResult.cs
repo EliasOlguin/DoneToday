@@ -1,4 +1,4 @@
-﻿namespace DoneToday.Api.Services;
+namespace DoneToday.Api.Services;
 
 public class WeeklyProgressResult
 {
@@ -27,6 +27,8 @@ public class HabitProgressResult
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string? Color { get; set; }
+
+    public string Icon { get; set; } = "habit";
     public int Scheduled { get; set; }
     public int Completed { get; set; }
     public double CompletionRate { get; set; }

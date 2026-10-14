@@ -1,4 +1,4 @@
-﻿using DoneToday.Api.Entities;
+using DoneToday.Api.Entities;
 
 namespace DoneToday.Api.Services;
 
@@ -20,7 +20,7 @@ public class ProgressService
 
         foreach (var habit in habits)
         {
-            var habitResult = new HabitProgressResult { Id = habit.Id, Name = habit.Name, Color = habit.Color };
+            var habitResult = new HabitProgressResult { Id = habit.Id, Name = habit.Name, Color = habit.Color, Icon = habit.Icon };
             var completions = habit.Completions
                 .Select(c => c.Date)
                 .ToHashSet();

@@ -203,5 +203,20 @@
   "settings.timeZoneHelp": "Heute, Serien und Wochenfortschritt richten sich nach dieser Zeitzone. Beim ersten Anmelden wird die Zeitzone deines Geräts erkannt.",
   "settings.useDeviceTimeZone": "Zeitzone des Geräts verwenden",
   "settings.timeZoneHistory": "Frühere Erledigungen behalten ihr ursprüngliches Datum. Ein Wechsel verschiebt deinen Verlauf nicht.",
-  "settings.timeZoneSaved": "Zeitzone gespeichert."
+  "settings.timeZoneSaved": "Zeitzone gespeichert.",
+  "icons.habit": "Sport",
+  "icons.book": "Lesen",
+  "icons.water": "Wasser",
+  "icons.walk": "Gehen",
+  "icons.moon": "Schlaf",
+  "icons.leaf": "Achtsamkeit",
+  "icons.code": "Programmieren",
+  "icons.heart": "Gesundheit",
+  "icons.music": "Musik",
+  "icons.food": "Essen",
+  "icons.sun": "Morgen",
+  "form.icon": "Symbol",
+  "form.iconHelp": "Wir schlagen anhand des Namens ein Symbol vor. Wähle ein Symbol, um deine eigene Auswahl beizubehalten.",
+  "form.iconSuggested": "Vorschlag: {{icon}}",
+  "form.useSuggestedIcon": "Vorschlag verwenden"
 }

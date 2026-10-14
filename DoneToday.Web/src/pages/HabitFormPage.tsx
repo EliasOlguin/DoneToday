@@ -8,6 +8,13 @@ import type { HabitDetail } from '../types/HabitDetail'
 import type { CreateHabitRequest } from '../types/CreateHabitRequest'
 import { createHabit, getHabitDetail, updateHabit } from '../api/habits'
 import { days, formatWeekday } from '../lib/format'
+import Icon from '../components/ui/Icon'
+import {
+  habitIcons,
+  resolveHabitIcon,
+  suggestHabitIcon,
+} from '../lib/habitIcons'
+import type { HabitIconName } from '../lib/habitIcons'
 
 const colors = [
   { color: '#8bd8bd', label: 'colors.mint' },
@@ -63,6 +70,11 @@ function HabitForm({ habit }: { habit?: HabitDetail }) {
   const [name, setName] = useState(habit?.name ?? '')
   const [description, setDescription] = useState(habit?.description ?? '')
   const [color, setColor] = useState(habit?.color ?? '#b7a5ff')
+  const [chosenIcon, setChosenIcon] = useState<HabitIconName | null>(
+    habit ? resolveHabitIcon(habit.icon) : null,
+  )
+  const suggestedIcon = suggestHabitIcon(name)
+  const icon = chosenIcon ?? suggestedIcon
   const [selectedDays, setSelectedDays] = useState<number[]>(
     habit?.daysOfWeek ?? [],
   )
@@ -101,6 +113,7 @@ function HabitForm({ habit }: { habit?: HabitDetail }) {
       name: name.trim(),
       description: description.trim() || null,
       color,
+      icon,
       daysOfWeek: selectedDays,
     })
   }
@@ -160,6 +173,51 @@ function HabitForm({ habit }: { habit?: HabitDetail }) {
             className="field resize-y"
           />
         </div>
+        <fieldset>
+          <legend className="mb-2 text-sm font-semibold">
+            {t('form.icon')}
+          </legend>
+          <p className="mb-3 text-xs leading-relaxed text-muted">
+            {t('form.iconHelp')}
+          </p>
+          <div className="mb-4 flex items-center gap-3 rounded-xl bg-surface p-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-elevated">
+              <Icon name={icon} style={{ color }} className="h-6 w-6" />
+            </div>
+            <span className="min-w-0 break-words text-sm font-medium">
+              {name.trim() || t('form.namePlaceholder')}
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {habitIcons.map((option) => (
+              <button
+                key={option}
+                type="button"
+                aria-label={t(`icons.${option}`)}
+                title={t(`icons.${option}`)}
+                aria-pressed={icon === option}
+                onClick={() => setChosenIcon(option)}
+                className={`flex h-11 w-11 items-center justify-center rounded-xl border transition-colors ${icon === option ? 'border-primary bg-primary/15 text-primary' : 'border-muted/20 bg-surface text-muted hover:bg-elevated'}`}
+              >
+                <Icon name={option} />
+              </button>
+            ))}
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-muted">
+              {t('form.iconSuggested', { icon: t(`icons.${suggestedIcon}`) })}
+            </span>
+            {chosenIcon !== null && (
+              <button
+                type="button"
+                onClick={() => setChosenIcon(null)}
+                className="min-h-11 font-medium text-primary"
+              >
+                {t('form.useSuggestedIcon')}
+              </button>
+            )}
+          </div>
+        </fieldset>
         <fieldset>
           <legend className="mb-3 text-sm font-semibold">
             {t('form.color')}

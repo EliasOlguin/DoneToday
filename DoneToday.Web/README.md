@@ -69,6 +69,10 @@ Keys use dot-separated names in flat JSON objects (`keySeparator: false`). TypeS
 
 On first authenticated session, `Intl.DateTimeFormat().resolvedOptions().timeZone` is saved through the CSRF-protected `POST /api/profile/time-zone` endpoint before habit pages load. `initializeOnly` prevents another device from replacing an existing choice. Settings offers a time-zone selector and a device-zone shortcut. The backend uses the saved zone for Today, schedule changes, completions, streaks and weekly progress. Today displays the same zone, date and greeting. Open tabs refresh date-dependent queries within 30 seconds of local midnight and when returning to the window; changing the preference also refreshes other tabs. Historical dates stay unchanged. Apply the `AddUserTimeZone` migration before running this version.
 
+### Habit icons
+
+Creating or editing a habit includes an icon picker and a preview in the selected color. New habits suggest an icon from keywords in English, Spanish and German; this runs locally without an external AI service. A manual choice remains selected when the name changes. Use suggestion restores automatic selection. Icons are saved in the account's habits and shown in Today, Habits, details, weekly progress and archived habits. Apply the `AddHabitIcon` migration; existing habits retain the default exercise icon. The API validates icon names against a fixed catalog. Run `node --test tests/habitIcons.test.mjs` to check suggestions and safe fallback behavior.
+
 ### Logo and web app installation
 
 The editable brand mark is `public/brand/logo.svg`: a sun and check mark in DoneToday's purple. The favicon and PNG app icons use the same design. `public/manifest.json` defines the app name, icons, scope and standalone launch; opening the installed app at `/` keeps the normal login/session routing.
@@ -158,6 +162,10 @@ Las claves tienen nombres separados por puntos dentro de objetos JSON planos (`k
 ### Zona horaria
 
 En la primera sesión autenticada guardamos `Intl.DateTimeFormat().resolvedOptions().timeZone` mediante `POST /api/profile/time-zone`, protegido por CSRF, antes de cargar los hábitos. `initializeOnly` evita que otro dispositivo reemplace una elección existente. Settings permite elegir la zona o seleccionar la del dispositivo. El backend la usa para Today, cambios de días, completaciones, rachas y progreso semanal. Today muestra esa misma zona, fecha y saludo. Las pestañas abiertas actualizan los datos dentro de los 30 segundos posteriores a la medianoche local y al volver a la ventana; cambiar la preferencia también actualiza las otras pestañas. El historial conserva sus fechas. Aplicá la migración `AddUserTimeZone` antes de ejecutar esta versión.
+
+### Iconos de hábitos
+
+Crear o editar un hábito incluye un selector de iconos y una vista previa con el color elegido. Los hábitos nuevos sugieren un icono a partir de palabras en inglés, español y alemán; esto funciona localmente sin un servicio externo de IA. Si elegís un icono manualmente, cambiar el nombre no reemplaza esa elección. Usar sugerencia restablece la selección automática. El icono se guarda con el hábito y aparece en Today, Habits, detalle, progreso semanal y hábitos archivados. Aplicá la migración `AddHabitIcon`; los hábitos existentes conservan el icono de ejercicio predeterminado. La API valida los nombres contra un catálogo fijo. Ejecutá `node --test tests/habitIcons.test.mjs` para comprobar las sugerencias y el icono de respaldo.
 
 ### Logo e instalación como web app
 

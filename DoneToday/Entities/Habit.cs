@@ -1,4 +1,4 @@
-﻿namespace DoneToday.Api.Entities;
+namespace DoneToday.Api.Entities;
 
 public class Habit
 {
@@ -11,6 +11,8 @@ public class Habit
     public string? Description { get; set; }
 
     public string? Color { get; set; }
+
+    public string Icon { get; set; } = "habit";
 
     public DateTimeOffset CreatedAt { get; set; }
 

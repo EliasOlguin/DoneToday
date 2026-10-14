@@ -1,3 +1,4 @@
+import { resolveHabitIcon } from '../lib/habitIcons'
 import { errorText } from '../api/errors'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -76,7 +77,7 @@ export default function HabitDetailPage() {
       <div className="mb-7 mt-3 text-center">
         <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-elevated">
           <Icon
-            name="habit"
+            name={resolveHabitIcon(data.icon)}
             className="h-10 w-10"
             style={{ color: data.color ?? 'var(--color-primary)' }}
           />

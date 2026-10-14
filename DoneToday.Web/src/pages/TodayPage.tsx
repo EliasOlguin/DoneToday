@@ -1,3 +1,4 @@
+import { resolveHabitIcon } from '../lib/habitIcons'
 import { errorText } from '../api/errors'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -155,7 +156,7 @@ export default function TodayPage() {
                   <div className="flex items-center gap-3">
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-elevated">
                       <Icon
-                        name="habit"
+                        name={resolveHabitIcon(habit.icon)}
                         className="h-6 w-6"
                         style={{ color: habit.color ?? '#b7a5ff' }}
                       />

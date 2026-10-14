@@ -203,5 +203,20 @@
   "settings.timeZoneHelp": "Today, las rachas y el progreso semanal usan esta zona horaria. Detectamos tu dispositivo al iniciar sesión por primera vez.",
   "settings.useDeviceTimeZone": "Usar zona del dispositivo",
   "settings.timeZoneHistory": "Los registros anteriores conservan su fecha original. Cambiar la zona no mueve tu historial.",
-  "settings.timeZoneSaved": "Zona horaria guardada."
+  "settings.timeZoneSaved": "Zona horaria guardada.",
+  "icons.habit": "Ejercicio",
+  "icons.book": "Lectura",
+  "icons.water": "Agua",
+  "icons.walk": "Caminar",
+  "icons.moon": "Dormir",
+  "icons.leaf": "Meditación",
+  "icons.code": "Programación",
+  "icons.heart": "Salud",
+  "icons.music": "Música",
+  "icons.food": "Comida",
+  "icons.sun": "Mañana",
+  "form.icon": "Icono",
+  "form.iconHelp": "Sugerimos un icono según el nombre. Elegí cualquiera para conservar tu propia elección.",
+  "form.iconSuggested": "Sugerido: {{icon}}",
+  "form.useSuggestedIcon": "Usar sugerencia"
 }

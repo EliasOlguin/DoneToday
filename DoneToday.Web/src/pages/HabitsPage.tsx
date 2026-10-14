@@ -1,3 +1,4 @@
+import { resolveHabitIcon } from '../lib/habitIcons'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { getHabits } from '../api/habits'
@@ -53,7 +54,7 @@ export default function HabitsPage() {
                 >
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-elevated">
                     <Icon
-                      name="habit"
+                      name={resolveHabitIcon(habit.icon)}
                       className="h-6 w-6"
                       style={{ color: habit.color ?? '#b7a5ff' }}
                     />

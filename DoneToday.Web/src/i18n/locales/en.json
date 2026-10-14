@@ -203,5 +203,20 @@
   "settings.timeZoneHelp": "Today, streaks and weekly progress follow this time zone. Your device is detected on your first sign-in.",
   "settings.useDeviceTimeZone": "Use device time zone",
   "settings.timeZoneHistory": "Previous completions keep their original date. Changing time zone does not move your history.",
-  "settings.timeZoneSaved": "Time zone saved."
+  "settings.timeZoneSaved": "Time zone saved.",
+  "icons.habit": "Exercise",
+  "icons.book": "Reading",
+  "icons.water": "Water",
+  "icons.walk": "Walking",
+  "icons.moon": "Sleep",
+  "icons.leaf": "Mindfulness",
+  "icons.code": "Coding",
+  "icons.heart": "Health",
+  "icons.music": "Music",
+  "icons.food": "Food",
+  "icons.sun": "Morning",
+  "form.icon": "Icon",
+  "form.iconHelp": "We suggest an icon from the name. Choose any icon to keep your own choice.",
+  "form.iconSuggested": "Suggested: {{icon}}",
+  "form.useSuggestedIcon": "Use suggestion"
 }

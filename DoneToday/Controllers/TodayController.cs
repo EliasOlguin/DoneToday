@@ -46,7 +46,7 @@ public class TodayController : AuthenticatedController
             {
                 Id = h.Id,
                 Name = h.Name,
-                Color = h.Color,
+                Color = h.Color, Icon = h.Icon,
                 IsCompleted = h.Completions.Any(c => c.Date == today),
                 CurrentStreak = _streakService.CalculateCurrentStreak(h, today),
                 BestStreak = _streakService.CalculateBestStreak(h)

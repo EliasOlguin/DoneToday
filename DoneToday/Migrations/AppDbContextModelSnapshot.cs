@@ -42,6 +42,13 @@ namespace DoneToday.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
+                    b.Property<string>("Icon")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("habit");
+
                     b.Property<bool>("IsArchived")
                         .HasColumnType("boolean");
 

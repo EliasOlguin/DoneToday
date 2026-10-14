@@ -34,6 +34,7 @@ public class HabitsController : AuthenticatedController
             Name = request.Name,
             Description = request.Description,
             Color = request.Color,
+            Icon = request.Icon,
             CreatedAt = DateTimeOffset.UtcNow,
             IsArchived = false,
             Schedules = request.DaysOfWeek
@@ -55,7 +56,7 @@ public class HabitsController : AuthenticatedController
             Id = habit.Id,
             Name = habit.Name,
             Description = habit.Description,
-            Color = habit.Color,
+            Color = habit.Color, Icon = habit.Icon,
             IsArchived = habit.IsArchived,
             CreatedAt = habit.CreatedAt,
             DaysOfWeek = habit.Schedules
@@ -92,7 +93,7 @@ public class HabitsController : AuthenticatedController
             Id = habit.Id,
             Name = habit.Name,
             Description = habit.Description,
-            Color = habit.Color,
+            Color = habit.Color, Icon = habit.Icon,
             IsArchived = habit.IsArchived,
             CreatedAt = habit.CreatedAt,
             DaysOfWeek = habit.Schedules
@@ -123,7 +124,7 @@ public class HabitsController : AuthenticatedController
                 Id = h.Id,
                 Name = h.Name,
                 Description = h.Description,
-                Color = h.Color,
+                Color = h.Color, Icon = h.Icon,
                 IsArchived = h.IsArchived,
                 CreatedAt = h.CreatedAt,
                 DaysOfWeek = h.Schedules
@@ -157,6 +158,7 @@ public class HabitsController : AuthenticatedController
         habit.Name = request.Name;
         habit.Description = request.Description;
         habit.Color = request.Color;
+        habit.Icon = request.Icon;
 
         var today = await _dates.GetTodayAsync(userId);
 
@@ -170,7 +172,7 @@ public class HabitsController : AuthenticatedController
             Id = habit.Id,
             Name = habit.Name,
             Description = habit.Description,
-            Color = habit.Color,
+            Color = habit.Color, Icon = habit.Icon,
             IsArchived = habit.IsArchived,
             CreatedAt = habit.CreatedAt,
             DaysOfWeek = habit.Schedules
@@ -195,7 +197,7 @@ public class HabitsController : AuthenticatedController
         return Ok(new HabitDetailResponse
         {
             Id = habit.Id, Name = habit.Name, Description = habit.Description,
-            Color = habit.Color, IsArchived = habit.IsArchived, CreatedAt = habit.CreatedAt,
+            Color = habit.Color, Icon = habit.Icon, IsArchived = habit.IsArchived, CreatedAt = habit.CreatedAt,
             DaysOfWeek = active.Select(s => s.DayOfWeek).ToList(),
             ScheduleEffectiveFrom = active.Count == 0 ? null : active.Min(s => s.ValidFrom),
             CurrentStreak = streakService.CalculateCurrentStreak(habit, today),
@@ -270,7 +272,7 @@ public class HabitsController : AuthenticatedController
                 Id = h.Id,
                 Name = h.Name,
                 Description = h.Description,
-                Color = h.Color,
+                Color = h.Color, Icon = h.Icon,
                 IsArchived = h.IsArchived,
                 CreatedAt = h.CreatedAt,
                 DaysOfWeek = h.Schedules

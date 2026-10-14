@@ -1,3 +1,4 @@
+import { resolveHabitIcon } from '../lib/habitIcons'
 import { errorText } from '../api/errors'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
@@ -78,7 +79,7 @@ export default function ProgressPage() {
                         className="flex min-h-16 items-center gap-3 px-4 py-3 hover:bg-elevated"
                       >
                         <Icon
-                          name="habit"
+                          name={resolveHabitIcon(habit.icon)}
                           style={{
                             color: habit.color ?? 'var(--color-primary)',
                           }}

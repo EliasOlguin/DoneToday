@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace DoneToday.Api.Dtos.Habits;
 
@@ -13,6 +13,9 @@ public class UpdateHabitRequest
 
     [RegularExpression("^#[0-9A-Fa-f]{6}$")]
     public string? Color { get; set; }
+
+    [Required, RegularExpression("^(habit|book|water|walk|moon|leaf|code|heart|music|food|sun)$")]
+    public string Icon { get; set; } = "habit";
 
     [Required]
     [MinLength(1)]

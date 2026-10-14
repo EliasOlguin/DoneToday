@@ -1,4 +1,4 @@
-﻿namespace DoneToday.Dtos.Habits;
+namespace DoneToday.Dtos.Habits;
 
 public class HabitResponse
 {
@@ -9,6 +9,8 @@ public class HabitResponse
     public string? Description { get; set; }
 
     public string? Color { get; set; }
+
+    public string Icon { get; set; } = "habit";
 
     public bool IsArchived { get; set; }
 

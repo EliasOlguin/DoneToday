@@ -1,4 +1,4 @@
-﻿using DoneToday.Api.Entities;
+using DoneToday.Api.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -23,6 +23,7 @@ public class AppDbContext : IdentityDbContext<User, IdentityRole<int>, int>, IDa
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.Entity<User>().ToTable("Users");
+        modelBuilder.Entity<Habit>().Property(h => h.Icon).HasMaxLength(20).HasDefaultValue("habit");
         modelBuilder.Entity<User>().Property(u => u.Email).IsRequired();
         modelBuilder.Entity<User>().Property(u => u.TimeZoneId).HasMaxLength(100);
         modelBuilder.Entity<User>()

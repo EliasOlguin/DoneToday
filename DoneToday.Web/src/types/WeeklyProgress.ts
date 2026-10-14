@@ -8,6 +8,7 @@ export interface WeeklyProgress {
   habits: {
     id: number
     name: string
+    icon: string
     color: string | null
     scheduled: number
     completed: number

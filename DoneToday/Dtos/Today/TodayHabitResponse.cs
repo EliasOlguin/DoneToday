@@ -1,4 +1,4 @@
-﻿namespace DoneToday.Api.Dtos.Today;
+namespace DoneToday.Api.Dtos.Today;
 
 public class TodayHabitResponse
 {
@@ -7,6 +7,8 @@ public class TodayHabitResponse
     public string Name { get; set; } = string.Empty;
 
     public string? Color { get; set; }
+
+    public string Icon { get; set; } = "habit";
 
     public bool IsCompleted { get; set; }
 

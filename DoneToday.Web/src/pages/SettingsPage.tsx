@@ -1,3 +1,4 @@
+import { resolveHabitIcon } from '../lib/habitIcons'
 import { errorText } from '../api/errors'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -140,7 +141,7 @@ export default function SettingsPage() {
             {archived.data.map((habit) => (
               <li key={habit.id} className="panel flex items-center gap-3">
                 <Icon
-                  name="habit"
+                  name={resolveHabitIcon(habit.icon)}
                   style={{ color: habit.color ?? 'var(--color-primary)' }}
                 />
                 <div className="min-w-0 flex-1">
