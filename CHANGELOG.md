@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.0 — 2026-10-14
+
+- Celebrate all daily habits completed with a dismissible illustrated dialog, once per account/day in this browser, respecting reduced motion. / Festejo ilustrado al completar todos los hábitos diarios, una vez por cuenta y día en este navegador, respetando movimiento reducido.
+- Automatically dismiss the completion/undo notice after ten seconds; clarify scheduled goal changes and test edited targets and units. / Cierra el aviso de completado a los diez segundos; aclara metas programadas y agrega pruebas de cambios de cantidad y unidad.
+
+- Optional daily habit targets in liters, milliliters, pages, chapters, kilometers, minutes, repetitions or sessions. Existing weekday selection and simple checkmark habits remain available. / Metas diarias opcionales en litros, mililitros, páginas, capítulos, kilómetros, minutos, repeticiones o sesiones; conserva el selector de días y los hábitos simples.
+- Add quantities or correct today's total with a dated ledger, automatic completion/streak updates and protection against duplicate requests and concurrent corrections. Goal edits start tomorrow in the account time zone and preserve historical targets. / Registros de cantidades y correcciones del total con historial, completado automático y protección ante duplicados y correcciones simultáneas. Los cambios de meta empiezan mañana y conservan objetivos históricos.
+- Keep existing completion charts/calendar and add separate weekly/monthly amount summaries with daily detail and the same habit filter. Units are not combined, and excess on one day does not compensate for another day. / Conserva gráficos y calendario y agrega cantidades semanales/mensuales con detalle diario y el mismo filtro de hábito. Las unidades no se mezclan y los excedentes no compensan otros días.
+- Apply additive migration `AddHabitGoalsAndProgress`. / Aplicar migración aditiva `AddHabitGoalsAndProgress`.
+
 ## 1.1.1 — 2026-10-14
 
 - Add ten clearly labeled Atomic Habits-inspired reflections; disable update polling in development and ignore older server releases in production. / Agrega diez reflexiones identificadas como inspiradas en Hábitos atómicos; desactiva el aviso de actualización en desarrollo e ignora versiones anteriores del servidor en producción.

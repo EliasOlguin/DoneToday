@@ -116,6 +116,8 @@ Stop the running API before `dotnet test` if Windows reports locked build files.
 
 ### Current scope
 
+Upcoming optional habit targets preserve individual weekday selection and existing completion statistics, adding manual amounts, corrections and separate weekly/monthly quantity views. Apply the additive `AddHabitGoalsAndProgress` migration before running the updated backend. See [measurable habits](docs/measurable-habits.md).
+
 Version 1.1.1 adds daily motivation in English, Spanish and German: 70 messages selected by the account's local date, including credited excerpts and clearly labeled Atomic Habits-inspired reflections. It also includes illustrated backgrounds, short page transitions and password visibility controls. Update checks run only in production and notify only for newer releases. See [daily motivation](docs/daily-motivation.md) and the [CHANGELOG](CHANGELOG.md).
 
 Version 1 supports email/password authentication with confirmation and recovery, optional authenticator 2FA, Google sign-in and explicit linking, per-account time zone/display name/manual habit order, selectable habit icons, weekly and monthly statistics, and account deletion. Theme and language remain browser preferences. Microsoft sign-in, yearly statistics and configurable habit start/end dates are outside this release.
@@ -233,6 +235,8 @@ Si Windows informa que los archivos de compilación están bloqueados, detené l
 | POST          | `/api/profile/delete`       | Confirmar y eliminar permanentemente la cuenta actual             |
 
 ### Alcance actual
+
+Las próximas metas opcionales conservan la selección individual de días y las estadísticas de completado actuales, y suman cantidades manuales, correcciones y vistas de cantidades semanales/mensuales. Aplicá la migración aditiva `AddHabitGoalsAndProgress` antes de ejecutar el backend actualizado. Consultá [hábitos con metas](docs/measurable-habits.md).
 
 La versión 1.1.1 agrega motivación diaria en inglés, español y alemán: 70 mensajes según la fecha local de la cuenta, con citas atribuidas y reflexiones identificadas como inspiradas en Hábitos atómicos. También incluye fondos ilustrados, transiciones breves y controles para mostrar contraseñas. El aviso de actualización funciona solo en producción y solo para versiones más recientes. Consultá [frase diaria](docs/daily-motivation.md) y el [CHANGELOG](CHANGELOG.md).
 

@@ -15,6 +15,12 @@ public class Habit
 
     public string Icon { get; set; } = "habit";
 
+    public decimal? GoalTarget { get; set; }
+    public string? GoalUnit { get; set; }
+    public DateOnly? GoalEffectiveFrom { get; set; }
+    public ICollection<HabitGoal> Goals { get; set; } = new List<HabitGoal>();
+    public ICollection<HabitDayProgress> Progress { get; set; } = new List<HabitDayProgress>();
+
     public DateTimeOffset CreatedAt { get; set; }
 
     public bool IsArchived { get; set; }

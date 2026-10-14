@@ -35,6 +35,9 @@ public class TodayController : AuthenticatedController
                 !h.IsArchived)
             .Include(h => h.Schedules)
             .Include(h => h.Completions)
+            .Include(h => h.Goals)
+            .Include(h => h.Progress.Where(p => p.Date == today))
+            .AsSplitQuery()
             .OrderBy(h => h.SortOrder).ThenBy(h => h.CreatedAt).ThenBy(h => h.Id)
             .ToListAsync();
 
@@ -49,6 +52,7 @@ public class TodayController : AuthenticatedController
                 Name = h.Name,
                 Color = h.Color, Icon = h.Icon,
                 IsCompleted = h.Completions.Any(c => c.Date == today),
+                Progress = Dtos.Habits.HabitProgressResponse.ForDate(h, today),
                 CurrentStreak = _streakService.CalculateCurrentStreak(h, today),
                 BestStreak = _streakService.CalculateBestStreak(h)
             })

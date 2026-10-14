@@ -17,12 +17,30 @@ public class AppDbContext : IdentityDbContext<User, IdentityRole<int>, int>, IDa
     public DbSet<DataProtectionKey> DataProtectionKeys { get; set; } = null!;
     public DbSet<HabitSchedule> HabitSchedules => Set<HabitSchedule>();
     public DbSet<HabitCompletion> HabitCompletions => Set<HabitCompletion>();
+    public DbSet<HabitGoal> HabitGoals => Set<HabitGoal>();
+    public DbSet<HabitDayProgress> HabitDayProgress => Set<HabitDayProgress>();
+    public DbSet<HabitProgressEntry> HabitProgressEntries => Set<HabitProgressEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.Entity<User>().ToTable("Users");
+        modelBuilder.Entity<Habit>().Property(h => h.GoalTarget).HasPrecision(12, 3);
+        modelBuilder.Entity<Habit>().Property(h => h.GoalUnit).HasMaxLength(20);
+        modelBuilder.Entity<HabitGoal>().Property(g => g.Target).HasPrecision(12, 3);
+        modelBuilder.Entity<HabitGoal>().Property(g => g.Unit).HasMaxLength(20);
+        modelBuilder.Entity<HabitGoal>().HasIndex(g => new { g.HabitId, g.ValidFrom }).IsUnique();
+        modelBuilder.Entity<HabitGoal>().HasOne(g => g.Habit).WithMany(h => h.Goals).HasForeignKey(g => g.HabitId);
+        modelBuilder.Entity<HabitDayProgress>().Property(p => p.Target).HasPrecision(12, 3);
+        modelBuilder.Entity<HabitDayProgress>().Property(p => p.Amount).HasPrecision(12, 3);
+        modelBuilder.Entity<HabitDayProgress>().Property(p => p.Unit).HasMaxLength(20);
+        modelBuilder.Entity<HabitDayProgress>().HasIndex(p => new { p.HabitId, p.Date }).IsUnique();
+        modelBuilder.Entity<HabitDayProgress>().HasOne(p => p.Habit).WithMany(h => h.Progress).HasForeignKey(p => p.HabitId);
+        modelBuilder.Entity<HabitProgressEntry>().Property(p => p.Amount).HasPrecision(12, 3);
+        modelBuilder.Entity<HabitProgressEntry>().Property(p => p.ResultingAmount).HasPrecision(12, 3);
+        modelBuilder.Entity<HabitProgressEntry>().HasIndex(p => new { p.HabitId, p.OperationId }).IsUnique();
+        modelBuilder.Entity<HabitProgressEntry>().HasOne(e => e.Progress).WithMany(p => p.Entries).HasForeignKey(e => e.HabitDayProgressId);
         modelBuilder.Entity<Habit>().Property(h => h.Icon).HasMaxLength(20).HasDefaultValue("habit");
         modelBuilder.Entity<User>().Property(u => u.Email).IsRequired();
         modelBuilder.Entity<User>().Property(u => u.TimeZoneId).HasMaxLength(100);

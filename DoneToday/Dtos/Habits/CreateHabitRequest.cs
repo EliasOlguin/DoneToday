@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace DoneToday.Dtos.Habits;
 
-public class CreateHabitRequest
+public class CreateHabitRequest : DoneToday.Api.Dtos.Habits.HabitGoalRequest
 {
     [Required]
     [StringLength(100, MinimumLength = 1)]

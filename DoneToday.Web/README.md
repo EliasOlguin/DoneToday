@@ -77,6 +77,10 @@ Keys use dot-separated names in flat JSON objects (`keySeparator: false`). TypeS
 
 Update checks run only in production builds. Development uses Vite hot updates and never polls for releases. Production notices require a newer semantic version; an older backend does not trigger a notice.
 
+### Optional habit targets
+
+Habit creation/editing now offers optional quantity or duration targets while keeping the existing individual weekday selector. Today and habit detail support quick additions, manual records and corrections with automatic completion when the target is reached. Existing statistics remain in place; separate weekly/monthly quantity summaries add historical daily targets and coverage without combining units. Goal edits begin tomorrow in the account time zone. Apply `AddHabitGoalsAndProgress` and restart the backend. See [measurable habits](../docs/measurable-habits.md) for rules, endpoints and tests (`npm run test:measurements`).
+
 ### Daily motivation
 
 Today shows one of 70 messages below the greeting, selected by the calendar date in the account's saved time zone. Revisiting, reloading or switching language keeps the same message; it advances at local midnight (within the existing 30-second clock refresh, or on window focus) and repeats after 70 days. All three catalogs contain matching `motivation.01`–`motivation.70` keys. No external API, extra package or database migration is needed. The catalog contains 58 original DoneToday messages, two short book excerpts and ten reformulated reflections inspired by Atomic Habits. Book-related entries have linked credits; the ten reflections are explicitly labeled Inspired by rather than presented as literal quotations. Spanish and German excerpts are DoneToday translations, not quotations from published translated editions. Source details and editing guidance: [daily motivation](../docs/daily-motivation.md). Run `npm run test:motivation`.
@@ -186,6 +190,10 @@ Para agregar un mensaje de interfaz:
 Las claves tienen nombres separados por puntos dentro de objetos JSON planos (`keySeparator: false`). TypeScript las comprueba contra el catálogo en inglés. Los errores de la API usan claves estables y se traducen al mostrarlos, por lo que un error visible puede cambiar de idioma. Las fechas y los porcentajes usan `Intl`; Today y la programación usan la zona guardada en la cuenta. El contenido creado por el usuario no se traduce automáticamente.
 
 El aviso de actualización solo se comprueba en compilaciones de producción. En desarrollo se usan las actualizaciones de Vite y no se consultan versiones. En producción se avisa solo por una versión semántica más reciente; un backend anterior no genera el cartel.
+
+### Metas opcionales por hábito
+
+Crear/editar permite agregar metas de cantidad o duración y conserva el selector de días individuales. Today y el detalle permiten sumas rápidas, registros manuales y correcciones; alcanzar la meta completa el hábito automáticamente. Las estadísticas anteriores se mantienen y se agregan cantidades semanales/mensuales con objetivos históricos y cobertura, sin mezclar unidades. Los cambios de meta empiezan mañana según la zona de la cuenta. Aplicá `AddHabitGoalsAndProgress` y reiniciá el backend. Consultá [hábitos con metas](../docs/measurable-habits.md) para reglas, rutas y pruebas (`npm run test:measurements`).
 
 ### Frase diaria
 

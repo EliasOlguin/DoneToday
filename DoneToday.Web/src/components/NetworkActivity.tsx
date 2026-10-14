@@ -7,7 +7,9 @@ import { isInitialRequest } from '../api/queryClient'
 
 export default function NetworkActivity({ children }: { children: ReactNode }) {
   const fetching = useIsFetching({ predicate: isInitialRequest })
-  const mutating = useIsMutating()
+  const mutating = useIsMutating({
+    predicate: (mutation) => mutation.meta?.localLoading !== true,
+  })
   const { t } = useTranslation()
   const busy = fetching > 0 || mutating > 0
   const status = useRef<HTMLDivElement>(null)

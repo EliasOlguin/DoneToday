@@ -42,6 +42,17 @@ namespace DoneToday.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
+                    b.Property<DateOnly?>("GoalEffectiveFrom")
+                        .HasColumnType("date");
+
+                    b.Property<decimal?>("GoalTarget")
+                        .HasPrecision(12, 3)
+                        .HasColumnType("numeric(12,3)");
+
+                    b.Property<string>("GoalUnit")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
                     b.Property<string>("Icon")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -92,6 +103,118 @@ namespace DoneToday.Migrations
                         .IsUnique();
 
                     b.ToTable("HabitCompletions");
+                });
+
+            modelBuilder.Entity("DoneToday.Api.Entities.HabitDayProgress", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 3)
+                        .HasColumnType("numeric(12,3)");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<int>("HabitId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Revision")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("Target")
+                        .HasPrecision(12, 3)
+                        .HasColumnType("numeric(12,3)");
+
+                    b.Property<string>("Unit")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HabitId", "Date")
+                        .IsUnique();
+
+                    b.ToTable("HabitDayProgress");
+                });
+
+            modelBuilder.Entity("DoneToday.Api.Entities.HabitGoal", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("HabitId")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal?>("Target")
+                        .HasPrecision(12, 3)
+                        .HasColumnType("numeric(12,3)");
+
+                    b.Property<string>("Unit")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateOnly>("ValidFrom")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("ValidTo")
+                        .HasColumnType("date");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HabitId", "ValidFrom")
+                        .IsUnique();
+
+                    b.ToTable("HabitGoals");
+                });
+
+            modelBuilder.Entity("DoneToday.Api.Entities.HabitProgressEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 3)
+                        .HasColumnType("numeric(12,3)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("HabitDayProgressId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("HabitId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsCorrection")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("OperationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("ResultingAmount")
+                        .HasPrecision(12, 3)
+                        .HasColumnType("numeric(12,3)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HabitDayProgressId");
+
+                    b.HasIndex("HabitId", "OperationId")
+                        .IsUnique();
+
+                    b.ToTable("HabitProgressEntries");
                 });
 
             modelBuilder.Entity("DoneToday.Api.Entities.User", b =>
@@ -375,6 +498,39 @@ namespace DoneToday.Migrations
                     b.Navigation("Habit");
                 });
 
+            modelBuilder.Entity("DoneToday.Api.Entities.HabitDayProgress", b =>
+                {
+                    b.HasOne("DoneToday.Api.Entities.Habit", "Habit")
+                        .WithMany("Progress")
+                        .HasForeignKey("HabitId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Habit");
+                });
+
+            modelBuilder.Entity("DoneToday.Api.Entities.HabitGoal", b =>
+                {
+                    b.HasOne("DoneToday.Api.Entities.Habit", "Habit")
+                        .WithMany("Goals")
+                        .HasForeignKey("HabitId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Habit");
+                });
+
+            modelBuilder.Entity("DoneToday.Api.Entities.HabitProgressEntry", b =>
+                {
+                    b.HasOne("DoneToday.Api.Entities.HabitDayProgress", "Progress")
+                        .WithMany("Entries")
+                        .HasForeignKey("HabitDayProgressId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Progress");
+                });
+
             modelBuilder.Entity("HabitSchedule", b =>
                 {
                     b.HasOne("DoneToday.Api.Entities.Habit", "Habit")
@@ -441,7 +597,16 @@ namespace DoneToday.Migrations
                 {
                     b.Navigation("Completions");
 
+                    b.Navigation("Goals");
+
+                    b.Navigation("Progress");
+
                     b.Navigation("Schedules");
+                });
+
+            modelBuilder.Entity("DoneToday.Api.Entities.HabitDayProgress", b =>
+                {
+                    b.Navigation("Entries");
                 });
 
             modelBuilder.Entity("DoneToday.Api.Entities.User", b =>

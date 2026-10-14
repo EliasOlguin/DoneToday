@@ -3,10 +3,11 @@ import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { getHabits } from '../api/habits'
 import { Link } from 'react-router'
-import { formatSchedule } from '../lib/format'
+import { formatDate, formatSchedule } from '../lib/format'
 import Icon from '../components/ui/Icon'
 import { useState } from 'react'
 import HabitOrder from '../components/HabitOrder'
+import MeasurementText from '../components/MeasurementText'
 
 export default function HabitsPage() {
   const { t } = useTranslation()
@@ -86,6 +87,25 @@ export default function HabitsPage() {
                     {habit.description && (
                       <p className="mt-2 break-words text-sm text-muted">
                         {habit.description}
+                      </p>
+                    )}
+                    {habit.goalTarget != null && habit.goalUnit && (
+                      <p className="mt-2 text-xs font-medium text-primary">
+                        {t('measure.dailyGoal')}:{' '}
+                        <MeasurementText
+                          value={habit.goalTarget}
+                          unit={habit.goalUnit}
+                        />
+                      </p>
+                    )}
+                    {habit.goalEffectiveFrom && (
+                      <p className="mt-1 text-xs text-muted">
+                        {habit.goalTarget == null && (
+                          <>{t('measure.simple')} · </>
+                        )}
+                        {t('measure.effective', {
+                          date: formatDate(habit.goalEffectiveFrom),
+                        })}
                       </p>
                     )}
                   </div>

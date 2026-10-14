@@ -50,6 +50,7 @@ public class HabitsController : AuthenticatedController
                 .ToList()
         };
 
+        if (request.GoalTarget.HasValue) HabitGoalService.Configure(habit, request.GoalTarget, request.GoalUnit, today);
         _context.Habits.Add(habit);
 
         await _context.SaveChangesAsync();
@@ -58,7 +59,7 @@ public class HabitsController : AuthenticatedController
             Id = habit.Id,
             Name = habit.Name,
             Description = habit.Description,
-            Color = habit.Color, Icon = habit.Icon,
+            Color = habit.Color, Icon = habit.Icon, GoalTarget = habit.GoalTarget, GoalUnit = habit.GoalUnit, GoalEffectiveFrom = habit.GoalEffectiveFrom,
             IsArchived = habit.IsArchived,
             CreatedAt = habit.CreatedAt,
             DaysOfWeek = habit.Schedules
@@ -104,7 +105,7 @@ public class HabitsController : AuthenticatedController
             Id = habit.Id,
             Name = habit.Name,
             Description = habit.Description,
-            Color = habit.Color, Icon = habit.Icon,
+            Color = habit.Color, Icon = habit.Icon, GoalTarget = habit.GoalTarget, GoalUnit = habit.GoalUnit, GoalEffectiveFrom = habit.GoalEffectiveFrom,
             IsArchived = habit.IsArchived,
             CreatedAt = habit.CreatedAt,
             DaysOfWeek = habit.Schedules
@@ -135,7 +136,7 @@ public class HabitsController : AuthenticatedController
                 Id = h.Id,
                 Name = h.Name,
                 Description = h.Description,
-                Color = h.Color, Icon = h.Icon,
+                Color = h.Color, Icon = h.Icon, GoalTarget = h.GoalTarget, GoalUnit = h.GoalUnit, GoalEffectiveFrom = h.GoalEffectiveFrom,
                 IsArchived = h.IsArchived,
                 CreatedAt = h.CreatedAt,
                 DaysOfWeek = h.Schedules
@@ -153,9 +154,12 @@ public class HabitsController : AuthenticatedController
     UpdateHabitRequest request)
     {
         var userId = CurrentUserId;
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+        await _context.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(71354, {id})");
 
         var habit = await _context.Habits
             .Include(h => h.Schedules)
+            .Include(h => h.Goals)
             .FirstOrDefaultAsync(h =>
                 h.Id == id &&
                 h.UserId == userId &&
@@ -173,17 +177,24 @@ public class HabitsController : AuthenticatedController
 
         var today = await _dates.GetTodayAsync(userId);
 
+        if (request.GoalSpecified && (habit.GoalTarget != request.GoalTarget || habit.GoalUnit != request.GoalUnit))
+        {
+            var removedGoals = HabitGoalService.Configure(habit, request.GoalTarget, request.GoalUnit, today.AddDays(1));
+            _context.HabitGoals.RemoveRange(removedGoals);
+        }
+
         var removedSchedules = HabitScheduleService.Update(habit, request.DaysOfWeek, today);
         _context.HabitSchedules.RemoveRange(removedSchedules);
 
         await _context.SaveChangesAsync();
+        await transaction.CommitAsync();
 
         var response = new HabitResponse
         {
             Id = habit.Id,
             Name = habit.Name,
             Description = habit.Description,
-            Color = habit.Color, Icon = habit.Icon,
+            Color = habit.Color, Icon = habit.Icon, GoalTarget = habit.GoalTarget, GoalUnit = habit.GoalUnit, GoalEffectiveFrom = habit.GoalEffectiveFrom,
             IsArchived = habit.IsArchived,
             CreatedAt = habit.CreatedAt,
             DaysOfWeek = habit.Schedules
@@ -199,20 +210,23 @@ public class HabitsController : AuthenticatedController
         [FromServices] StreakService streakService)
     {
         var userId = CurrentUserId;
+        var today = await _dates.GetTodayAsync(userId);
         var habit = await _context.Habits.AsNoTracking()
             .Include(h => h.Schedules).Include(h => h.Completions)
+            .Include(h => h.Goals)
+            .Include(h => h.Progress.Where(p => p.Date == today)).ThenInclude(p => p.Entries).AsSplitQuery()
             .FirstOrDefaultAsync(h => h.Id == id && h.UserId == userId && !h.IsArchived);
         if (habit is null) return NotFound();
-        var today = await _dates.GetTodayAsync(userId);
         var active = habit.Schedules.Where(s => s.ValidTo == null).ToList();
         return Ok(new HabitDetailResponse
         {
             Id = habit.Id, Name = habit.Name, Description = habit.Description,
-            Color = habit.Color, Icon = habit.Icon, IsArchived = habit.IsArchived, CreatedAt = habit.CreatedAt,
+            Color = habit.Color, Icon = habit.Icon, GoalTarget = habit.GoalTarget, GoalUnit = habit.GoalUnit, GoalEffectiveFrom = habit.GoalEffectiveFrom, IsArchived = habit.IsArchived, CreatedAt = habit.CreatedAt,
             DaysOfWeek = active.Select(s => s.DayOfWeek).ToList(),
             ScheduleEffectiveFrom = active.Count == 0 ? null : active.Min(s => s.ValidFrom),
             CurrentStreak = streakService.CalculateCurrentStreak(habit, today),
             BestStreak = streakService.CalculateBestStreak(habit),
+            Progress = HabitProgressResponse.ForDate(habit, today, true),
             CompletionDates = habit.Completions.Select(c => c.Date).OrderDescending().ToList()
         });
     }
@@ -283,7 +297,7 @@ public class HabitsController : AuthenticatedController
                 Id = h.Id,
                 Name = h.Name,
                 Description = h.Description,
-                Color = h.Color, Icon = h.Icon,
+                Color = h.Color, Icon = h.Icon, GoalTarget = h.GoalTarget, GoalUnit = h.GoalUnit, GoalEffectiveFrom = h.GoalEffectiveFrom,
                 IsArchived = h.IsArchived,
                 CreatedAt = h.CreatedAt,
                 DaysOfWeek = h.Schedules
@@ -302,6 +316,7 @@ public class HabitsController : AuthenticatedController
 
         var habit = await _context.Habits
             .Include(h => h.Schedules)
+            .Include(h => h.Goals)
             .FirstOrDefaultAsync(h =>
                 h.Id == id &&
                 h.UserId == userId &&
@@ -313,6 +328,9 @@ public class HabitsController : AuthenticatedController
         }
 
         var today = await _dates.GetTodayAsync(userId);
+
+        if (HabitGoalService.ForDate(habit, today)?.Target is not null) return Conflict(new { code = "measuredHabit" });
+        if (!HabitGoalService.Scheduled(habit, today)) return Conflict(new { code = "notScheduled" });
 
         var alreadyCompleted = await _context.HabitCompletions
             .AnyAsync(c =>
@@ -343,6 +361,7 @@ public class HabitsController : AuthenticatedController
         var userId = CurrentUserId;
 
         var habit = await _context.Habits
+            .Include(h => h.Goals)
             .FirstOrDefaultAsync(h =>
                 h.Id == id &&
                 h.UserId == userId &&
@@ -354,6 +373,8 @@ public class HabitsController : AuthenticatedController
         }
 
         var today = await _dates.GetTodayAsync(userId);
+
+        if (HabitGoalService.ForDate(habit, today)?.Target is not null) return Conflict(new { code = "measuredHabit" });
 
         var completion = await _context.HabitCompletions
             .FirstOrDefaultAsync(c =>

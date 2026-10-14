@@ -13,6 +13,7 @@ import MonthlyProgress from '../components/MonthlyProgress'
 import { useState } from 'react'
 import StatisticsHabitSelector from '../components/StatisticsHabitSelector'
 import { getHabits } from '../api/habits'
+import QuantityProgress from '../components/QuantityProgress'
 
 export default function ProgressPage() {
   const { t } = useTranslation()
@@ -135,6 +136,7 @@ export default function ProgressPage() {
           </div>
         </>
       )}
+      <QuantityProgress habitId={habitId} />
       <MonthlyProgress habitId={habitId} />
     </section>
   )

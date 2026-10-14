@@ -11,6 +11,7 @@ public class TodayHabitResponse
     public string Icon { get; set; } = "habit";
 
     public bool IsCompleted { get; set; }
+    public DoneToday.Api.Dtos.Habits.HabitProgressResponse? Progress { get; set; }
 
     public int CurrentStreak { get; set; }
 

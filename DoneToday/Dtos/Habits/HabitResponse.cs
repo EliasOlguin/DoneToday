@@ -11,6 +11,9 @@ public class HabitResponse
     public string? Color { get; set; }
 
     public string Icon { get; set; } = "habit";
+    public decimal? GoalTarget { get; set; }
+    public string? GoalUnit { get; set; }
+    public DateOnly? GoalEffectiveFrom { get; set; }
 
     public bool IsArchived { get; set; }
 

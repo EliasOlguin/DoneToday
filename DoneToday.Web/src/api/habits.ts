@@ -4,6 +4,7 @@ import type { TranslationKey } from './errors'
 import type { Habit } from '../types/Habit'
 import type { HabitDetail } from '../types/HabitDetail'
 import type { CreateHabitRequest } from '../types/CreateHabitRequest'
+import type { HabitProgress } from '../types/HabitProgress'
 
 async function ensureSuccess(
   response: Response,
@@ -86,4 +87,24 @@ export async function restoreHabit(id: number): Promise<void> {
     method: 'PATCH',
   })
   await ensureSuccess(response, 'errors.restore')
+}
+
+export async function recordHabitProgress(
+  id: number,
+  request: {
+    amount: number
+    date: string
+    operationId: string
+    expectedRevision?: number
+  },
+  correction = false,
+): Promise<HabitProgress> {
+  const response = await apiFetch(`/api/Habits/${id}/progress`, {
+    method: correction ? 'PUT' : 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  })
+  if (response.status === 409) throw new ApiError('measure.changed')
+  await ensureSuccess(response, 'measure.saveError')
+  return response.json()
 }

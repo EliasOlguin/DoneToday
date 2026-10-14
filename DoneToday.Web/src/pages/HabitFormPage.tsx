@@ -15,6 +15,10 @@ import {
   suggestHabitIcon,
 } from '../lib/habitIcons'
 import type { HabitIconName } from '../lib/habitIcons'
+import { goalUnits } from '../types/HabitProgress'
+import type { GoalUnit } from '../types/HabitProgress'
+import { validMeasurement, wholeUnit } from '../lib/measurements'
+import MeasurementText from '../components/MeasurementText'
 
 const colors = [
   { color: '#8bd8bd', label: 'colors.mint' },
@@ -75,11 +79,16 @@ function HabitForm({ habit }: { habit?: HabitDetail }) {
   )
   const suggestedIcon = suggestHabitIcon(name)
   const icon = chosenIcon ?? suggestedIcon
+  const [measured, setMeasured] = useState(habit?.goalTarget != null)
+  const [goalTarget, setGoalTarget] = useState(String(habit?.goalTarget ?? ''))
+  const [goalUnit, setGoalUnit] = useState<GoalUnit>(
+    habit?.goalUnit ?? 'minutes',
+  )
   const [selectedDays, setSelectedDays] = useState<number[]>(
     habit?.daysOfWeek ?? [],
   )
   const [validationError, setValidationError] = useState<
-    '' | 'errors.nameRequired' | 'errors.daysRequired'
+    '' | 'errors.nameRequired' | 'errors.daysRequired' | 'measure.invalid'
   >('')
   const navigate = useNavigate()
   const client = useQueryClient()
@@ -108,6 +117,10 @@ function HabitForm({ habit }: { habit?: HabitDetail }) {
       setValidationError('errors.daysRequired')
       return
     }
+    if (measured && !validMeasurement(Number(goalTarget), goalUnit)) {
+      setValidationError('measure.invalid')
+      return
+    }
     setValidationError('')
     save.mutate({
       name: name.trim(),
@@ -115,6 +128,8 @@ function HabitForm({ habit }: { habit?: HabitDetail }) {
       color,
       icon,
       daysOfWeek: selectedDays,
+      goalTarget: measured ? Number(goalTarget) : null,
+      goalUnit: measured ? goalUnit : null,
     })
   }
   return (
@@ -127,6 +142,10 @@ function HabitForm({ habit }: { habit?: HabitDetail }) {
         description !== (habit?.description ?? '') ||
         color !== (habit?.color ?? '#b7a5ff') ||
         icon !== (habit ? resolveHabitIcon(habit.icon) : 'habit') ||
+        measured !== (habit?.goalTarget != null) ||
+        (measured &&
+          (Number(goalTarget) !== habit?.goalTarget ||
+            goalUnit !== habit?.goalUnit)) ||
         [...selectedDays].sort().join(',') !==
           [...(habit?.daysOfWeek ?? [])].sort().join(',')
       }
@@ -264,6 +283,103 @@ function HabitForm({ habit }: { habit?: HabitDetail }) {
             />
             {t('form.customColor')}
           </label>
+        </fieldset>
+        <fieldset className="rounded-2xl border border-muted/15 bg-surface p-4">
+          <legend className="px-1 text-sm font-semibold">
+            {t('measure.tracking')}
+          </legend>
+          <label className="flex min-h-11 items-center gap-3 text-sm font-medium">
+            <input
+              type="checkbox"
+              checked={measured}
+              onChange={(event) => {
+                setMeasured(event.target.checked)
+                if (event.target.checked && !goalTarget) {
+                  setGoalUnit(
+                    icon === 'water'
+                      ? 'l'
+                      : icon === 'book'
+                        ? 'pages'
+                        : icon === 'walk'
+                          ? 'km'
+                          : 'minutes',
+                  )
+                  setGoalTarget(
+                    icon === 'water' ? '2' : icon === 'walk' ? '3' : '20',
+                  )
+                }
+              }}
+              className="h-5 w-5 accent-primary"
+            />
+            {t('measure.enable')}
+          </label>
+          <p className="mt-1 text-xs leading-relaxed text-muted">
+            {t('measure.optionalHelp')}
+          </p>
+          {measured && (
+            <div className="mt-4 space-y-4">
+              <div>
+                <label
+                  htmlFor="goal-target"
+                  className="mb-2 block text-sm font-semibold"
+                >
+                  {t('measure.dailyGoal')}
+                </label>
+                <input
+                  id="goal-target"
+                  type="number"
+                  className="field"
+                  value={goalTarget}
+                  required
+                  min={wholeUnit(goalUnit) ? 1 : 0.001}
+                  max={1_000_000}
+                  step={wholeUnit(goalUnit) ? 1 : 0.001}
+                  onChange={(event) => setGoalTarget(event.target.value)}
+                />
+              </div>
+              <fieldset>
+                <legend className="mb-2 text-sm font-semibold">
+                  {t('measure.unitLabel')}
+                </legend>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {goalUnits.map((unit) => (
+                    <button
+                      key={unit}
+                      type="button"
+                      onClick={() => setGoalUnit(unit)}
+                      aria-pressed={goalUnit === unit}
+                      className={`min-h-11 rounded-xl border px-2 text-xs ${goalUnit === unit ? 'border-primary bg-primary/10 text-primary' : 'border-muted/20 text-muted'}`}
+                    >
+                      {t(`measure.unit.${unit}`, { count: 2 })}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+              {validMeasurement(Number(goalTarget), goalUnit) && (
+                <div className="rounded-xl bg-elevated p-3 text-sm">
+                  <span className="font-semibold">
+                    {name.trim() || t('measure.preview')}
+                  </span>
+                  <p className="mt-1 text-muted">
+                    0 /{' '}
+                    <MeasurementText
+                      value={Number(goalTarget)}
+                      unit={goalUnit}
+                    />
+                  </p>
+                  <div className="mt-3 h-1.5 rounded-full bg-primary/10" />
+                </div>
+              )}
+              <p className="text-xs leading-relaxed text-muted">
+                {t('measure.autoHelp')}
+              </p>
+            </div>
+          )}
+          {habit && (
+            <p className="mt-3 text-xs leading-relaxed text-muted">
+              {t('measure.editHelp')}
+            </p>
+          )}
         </fieldset>
         <fieldset>
           <legend className="mb-3 text-sm font-semibold">

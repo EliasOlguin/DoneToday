@@ -18,7 +18,7 @@ const backgroundCharacters = [
   { activity: 'run', tone: 'lavender', x: '44%', y: '94%', delay: '-14s' },
 ]
 
-function Character({ activity }: { activity: string }) {
+export function Character({ activity }: { activity: string }) {
   return (
     <svg viewBox="0 0 120 140" fill="none" aria-hidden="true">
       <ellipse cx="60" cy="127" rx="34" ry="5" className="habit-shadow" />
@@ -60,6 +60,20 @@ function Character({ activity }: { activity: string }) {
                 strokeWidth="8"
               />
             )}
+          </>
+        ) : activity === 'celebrate' ? (
+          <>
+            <path
+              d="m52 90-8 30-12 1m36-31 8 30 12 1"
+              className="habit-trousers"
+              strokeWidth="11"
+            />
+            <path d="M60 57v34" className="habit-shirt" strokeWidth="29" />
+            <path
+              d="m47 63-17-15-8-22m51 37 17-15 8-22"
+              className="habit-skin-stroke"
+              strokeWidth="8"
+            />
           </>
         ) : activity === 'run' ? (
           <>

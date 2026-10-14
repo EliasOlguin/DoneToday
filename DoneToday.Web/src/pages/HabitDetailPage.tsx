@@ -7,9 +7,21 @@ import { useState } from 'react'
 import { archiveHabit, getHabitDetail } from '../api/habits'
 import { formatDate, formatSchedule } from '../lib/format'
 import Icon from '../components/ui/Icon'
+import HabitProgressControl from '../components/HabitProgressControl'
+import MeasurementText from '../components/MeasurementText'
+import { useSession } from '../hooks/useSession'
+import { useNow } from '../hooks/useNow'
 
 export default function HabitDetailPage() {
   const { t } = useTranslation()
+  const session = useSession()
+  const now = useNow()
+  const localDay = new Intl.DateTimeFormat('en-CA', {
+    timeZone: session.data?.timeZoneId ?? 'UTC',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(now)
   const { id } = useParams()
   const habitId = Number(id)
   const valid = Number.isInteger(habitId) && habitId > 0
@@ -105,6 +117,46 @@ export default function HabitDetailPage() {
           </div>
         </div>
       </div>
+      {data.goalEffectiveFrom && (
+        <div className="panel mt-3">
+          <h2 className="text-sm font-semibold">
+            {t(
+              data.goalEffectiveFrom > localDay
+                ? 'measure.pendingGoal'
+                : 'measure.configuredGoal',
+            )}
+          </h2>
+          <p className="mt-2 text-sm">
+            {data.goalTarget != null && data.goalUnit ? (
+              <MeasurementText value={data.goalTarget} unit={data.goalUnit} />
+            ) : (
+              t('measure.simple')
+            )}
+          </p>
+          <p className="mt-1 text-xs text-muted">
+            {t('measure.effective', {
+              date: formatDate(data.goalEffectiveFrom),
+            })}
+          </p>
+          {data.goalEffectiveFrom > localDay && (
+            <p className="mt-2 text-sm text-primary">{t('measure.editHelp')}</p>
+          )}
+        </div>
+      )}
+      {data.progress && (
+        <section className="panel mt-3" aria-label={t('measure.todayProgress')}>
+          <h2 className="text-sm font-semibold">
+            {t('measure.todayProgress')}
+          </h2>
+          <HabitProgressControl
+            key={`${data.id}-${data.progress.date}`}
+            id={data.id}
+            name={data.name}
+            progress={data.progress}
+            history
+          />
+        </section>
+      )}
       <div className="panel mt-3">
         <h2 className="text-sm font-semibold">{t('common.schedule')}</h2>
         <p className="mt-2 text-sm text-muted">

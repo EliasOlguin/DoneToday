@@ -11,8 +11,10 @@ import { getWeeklyProgress } from '../api/progress'
 import { formatPercent } from '../lib/format'
 import { useSession } from '../hooks/useSession'
 import { useNow } from '../hooks/useNow'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import DailyMotivation from '../components/DailyMotivation'
+import HabitProgressControl from '../components/HabitProgressControl'
+import DailyCelebration from '../components/DailyCelebration'
 
 export default function TodayPage() {
   const { t, i18n } = useTranslation()
@@ -30,6 +32,11 @@ export default function TodayPage() {
     name: string
     day: string
   } | null>(null)
+  useEffect(() => {
+    if (!undo) return
+    const timer = window.setTimeout(() => setUndo(null), 10_000)
+    return () => window.clearTimeout(timer)
+  }, [undo])
   const {
     data: habits,
     isPending,
@@ -102,6 +109,13 @@ export default function TodayPage() {
   }).format(now)
   return (
     <section aria-labelledby="today-title">
+      {session.data && (
+        <DailyCelebration
+          key={`${session.data.id}-${localDay}`}
+          userId={session.data.id}
+          day={localDay}
+        />
+      )}
       <div className="flex items-center justify-between gap-6">
         <div className="min-w-0">
           <p className="text-sm text-muted">
@@ -208,34 +222,44 @@ export default function TodayPage() {
                         </span>
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      aria-label={t(
-                        habit.isCompleted ? 'today.undo' : 'today.complete',
-                        { name: habit.name },
-                      )}
-                      aria-pressed={habit.isCompleted}
-                      disabled={completionMutation.isPending}
-                      onClick={() =>
-                        completionMutation.mutate({
-                          id: habit.id,
-                          isCompleted: habit.isCompleted,
-                        })
-                      }
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full disabled:opacity-50"
-                    >
-                      <span
-                        className={`flex h-7 w-7 items-center justify-center rounded-full border ${habit.isCompleted ? 'border-success bg-success text-background' : 'border-muted/50'}`}
+                    {!habit.progress && (
+                      <button
+                        type="button"
+                        aria-label={t(
+                          habit.isCompleted ? 'today.undo' : 'today.complete',
+                          { name: habit.name },
+                        )}
+                        aria-pressed={habit.isCompleted}
+                        disabled={completionMutation.isPending}
+                        onClick={() =>
+                          completionMutation.mutate({
+                            id: habit.id,
+                            isCompleted: habit.isCompleted,
+                          })
+                        }
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full disabled:opacity-50"
                       >
-                        {completionMutation.isPending &&
-                        completionMutation.variables?.id === habit.id ? (
-                          <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                        ) : habit.isCompleted ? (
-                          <Icon name="check" className="h-4 w-4" />
-                        ) : null}
-                      </span>
-                    </button>
+                        <span
+                          className={`flex h-7 w-7 items-center justify-center rounded-full border ${habit.isCompleted ? 'border-success bg-success text-background' : 'border-muted/50'}`}
+                        >
+                          {completionMutation.isPending &&
+                          completionMutation.variables?.id === habit.id ? (
+                            <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                          ) : habit.isCompleted ? (
+                            <Icon name="check" className="h-4 w-4" />
+                          ) : null}
+                        </span>
+                      </button>
+                    )}
                   </div>
+                  {habit.progress && (
+                    <HabitProgressControl
+                      key={`${habit.id}-${habit.progress.date}`}
+                      id={habit.id}
+                      name={habit.name}
+                      progress={habit.progress}
+                    />
+                  )}
                   {completionMutation.isError &&
                     completionMutation.variables?.id === habit.id && (
                       <p role="alert" className="mt-2 text-sm text-danger">
