@@ -36,7 +36,7 @@ export default function TodayPage() {
   } = useQuery({ queryKey: ['today'], queryFn: getTodayHabits })
   const week = useQuery({
     queryKey: ['progress', 'week'],
-    queryFn: getWeeklyProgress,
+    queryFn: () => getWeeklyProgress(),
   })
   const completed = habits?.filter((habit) => habit.isCompleted).length
   const metrics = [

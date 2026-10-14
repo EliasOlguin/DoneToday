@@ -13,16 +13,21 @@ export type MonthlyProgress = {
 export async function getMonthlyProgress(
   year: number,
   month: number,
+  habitId?: number,
 ): Promise<MonthlyProgress> {
   const response = await apiFetch(
-    `/api/Progress/month?year=${year}&month=${month}`,
+    `/api/Progress/month?year=${year}&month=${month}${habitId ? `&habitId=${habitId}` : ''}`,
   )
   if (!response.ok) throw new ApiError('errors.progress')
   return response.json()
 }
 
-export async function getWeeklyProgress(): Promise<WeeklyProgress> {
-  const response = await apiFetch('/api/Progress/week')
+export async function getWeeklyProgress(
+  habitId?: number,
+): Promise<WeeklyProgress> {
+  const response = await apiFetch(
+    `/api/Progress/week${habitId ? `?habitId=${habitId}` : ''}`,
+  )
   if (!response.ok) throw new ApiError('errors.progress')
   return response.json()
 }

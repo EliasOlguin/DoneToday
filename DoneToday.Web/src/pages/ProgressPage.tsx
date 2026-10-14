@@ -10,13 +10,23 @@ import Icon from '../components/ui/Icon'
 import DailyProgressChart from '../components/DailyProgressChart'
 import { useSession } from '../hooks/useSession'
 import MonthlyProgress from '../components/MonthlyProgress'
+import { useState } from 'react'
+import StatisticsHabitSelector from '../components/StatisticsHabitSelector'
+import { getHabits } from '../api/habits'
 
 export default function ProgressPage() {
   const { t } = useTranslation()
   const timeZone = useSession().data?.timeZoneId ?? 'UTC'
+  const [selected, setSelected] = useState<number | undefined>()
+  const habits = useQuery({ queryKey: ['habits'], queryFn: getHabits })
+  const habitId =
+    habits.data && !habits.data.some((h) => h.id === selected)
+      ? undefined
+      : selected
   const progress = useQuery({
-    queryKey: ['progress', 'week'],
-    queryFn: getWeeklyProgress,
+    queryKey: habitId ? ['progress', 'week', habitId] : ['progress', 'week'],
+    queryFn: () => getWeeklyProgress(habitId),
+    meta: { localLoading: true },
   })
   return (
     <section aria-labelledby="stats-title">
@@ -24,11 +34,31 @@ export default function ProgressPage() {
         {t('common.statistics')}
       </h1>
       <p className="mt-2 text-sm text-muted">{t('stats.tagline')}</p>
+      <div className="mt-5 max-w-md">
+        <StatisticsHabitSelector
+          habits={habits.data}
+          value={habitId}
+          onChange={setSelected}
+        />
+        <p className="mt-2 text-xs text-muted">{t('stats.filterHelp')}</p>
+        {habits.isError && (
+          <p role="alert" className="mt-2 text-xs text-danger">
+            {t('errors.loadHabits')}{' '}
+            <button
+              type="button"
+              className="min-h-11 underline"
+              onClick={() => void habits.refetch()}
+            >
+              {t('common.retry')}
+            </button>
+          </p>
+        )}
+      </div>
       <div className="mt-6 inline-flex min-h-10 items-center rounded-xl bg-primary px-5 text-sm font-semibold text-background">
         {t('week.title')}
       </div>
       <div className="mt-4">
-        <WeekProgressCard />
+        <WeekProgressCard habitId={habitId} localLoading />
       </div>
       {progress.isPending ? (
         <p role="status" className="mt-6 text-muted">
@@ -105,7 +135,7 @@ export default function ProgressPage() {
           </div>
         </>
       )}
-      <MonthlyProgress />
+      <MonthlyProgress habitId={habitId} />
     </section>
   )
 }

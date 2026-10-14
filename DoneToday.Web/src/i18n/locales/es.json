@@ -250,5 +250,9 @@
   "update.later": "Más tarde",
   "update.unsaved": "Tenés cambios sin guardar. ¿Recargar y descartarlos?",
   "update.discard": "Recargar y descartar",
-  "update.keepEditing": "Seguir editando"
+  "update.keepEditing": "Seguir editando",
+  "stats.filter": "Estadísticas de",
+  "stats.allHabits": "Todos los hábitos",
+  "stats.filterHelp": "Se aplica al progreso semanal y al calendario mensual.",
+  "month.filteredHelp": "Solo contamos el hábito seleccionado. Verde indica que lo completaste; no contamos días futuros."
 }

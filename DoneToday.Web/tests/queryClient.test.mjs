@@ -108,3 +108,21 @@ test('the first request activates blocking loading until data arrives', async ()
     client.clear()
   }
 })
+
+test('a new statistics filter loads locally without blocking the app', async () => {
+  const client = createAppQueryClient()
+  let finish
+  const pending = client.fetchQuery({
+    queryKey: ['progress', 'week', 7],
+    meta: { localLoading: true },
+    queryFn: () =>
+      new Promise((resolve) => {
+        finish = resolve
+      }),
+  })
+  assert.equal(client.isFetching(), 1)
+  assert.equal(client.isFetching({ predicate: isInitialRequest }), 0)
+  finish({ completed: 1, scheduled: 2 })
+  await pending
+  client.clear()
+})

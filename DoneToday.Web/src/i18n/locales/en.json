@@ -250,5 +250,9 @@
   "update.later": "Later",
   "update.unsaved": "You have unsaved changes. Reload and discard them?",
   "update.discard": "Reload and discard",
-  "update.keepEditing": "Keep editing"
+  "update.keepEditing": "Keep editing",
+  "stats.filter": "Statistics for",
+  "stats.allHabits": "All habits",
+  "stats.filterHelp": "Applies to weekly progress and the monthly calendar.",
+  "month.filteredHelp": "Only the selected habit is counted. Green means it was completed; future days are not counted."
 }

@@ -9,13 +9,18 @@ import Icon from './ui/Icon'
 
 export default function WeekProgressCard({
   expanded = false,
+  habitId,
+  localLoading = false,
 }: {
   expanded?: boolean
+  habitId?: number
+  localLoading?: boolean
 }) {
   const { t } = useTranslation()
   const { data, isPending, isError } = useQuery({
-    queryKey: ['progress', 'week'],
-    queryFn: getWeeklyProgress,
+    queryKey: habitId ? ['progress', 'week', habitId] : ['progress', 'week'],
+    queryFn: () => getWeeklyProgress(habitId),
+    meta: { localLoading },
   })
   const rate = Math.min(100, Math.max(0, data?.completionRate ?? 0))
   return (

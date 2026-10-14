@@ -6,6 +6,10 @@
 
 ### First release: 1.0.0
 
+Stats defaults to All habits. Its habit selector applies to both weekly totals/charts and the monthly calendar, including previous months. Only active habits belonging to the signed-in account can be selected; another account's or unavailable habit ID returns 404. Today keeps its overall weekly summary. No database migration is required for filtering.
+
+The selector uses themed menu items, habit icons and keyboard navigation rather than the operating system's select popup. Statistics queries opt into local loading; changing habit or month keeps the rest of the app interactive and does not reload the document or activate the global loading overlay.
+
 Version 1.0.1 adds an update notice. `/api/version` returns the deployed .NET release with `Cache-Control: no-store`. A separate lightweight check compares it with the loaded `VERSION` every three minutes while visible and on returning to the tab (at most one request per minute). It does not activate the global loading overlay or reload automatically. Update confirms before discarding edited forms or habit order; Later hides that release notice for this visit. Network/old-endpoint errors stay silent. Increase VERSION and package/lockfile versions for each release; an already-open 1.0.0 tab must be reloaded once to get this feature.
 
 The version shown in Settings comes from the root `VERSION` file; keep package.json/package-lock.json in sync when releasing. See the bilingual [CHANGELOG](../CHANGELOG.md). Version 1 adds saved manual ordering from Habits (mouse/touch handle and keyboard-accessible arrows), a completion notice with Undo, display-name editing, explicit account deletion and a monthly calendar in Stats. Ordering is applied after Save, including in Today; Cancel leaves the saved order unchanged. Undo remains available until dismissed, another action replaces it, navigation occurs or the local day changes. Monthly counts include currently active habits, valid schedule history and elapsed local dates; future dates do not count. Profile deletion is irreversible and removes account/habit/history records, with email, password and authenticator confirmation as applicable. Apply the `AddProfileAndHabitOrder` migration locally. Docker/Render includes the same release version.
@@ -105,6 +109,10 @@ npm run test:session
 ## Español
 
 ### Primera versión: 1.0.0
+
+Stats muestra Todos los hábitos por defecto. El selector se aplica a los totales/gráficos semanales y al calendario mensual, incluso en meses anteriores. Solo permite seleccionar hábitos activos de la cuenta autenticada; un ID ajeno o no disponible devuelve 404. Today mantiene su resumen semanal general. El filtro no requiere migración de base.
+
+El selector usa un menú con los colores de la app, iconos y navegación por teclado, en lugar del desplegable del sistema operativo. Las consultas de estadísticas muestran la carga dentro de sus secciones; cambiar de hábito o mes mantiene el resto de la app disponible, sin recargar el documento ni activar el loading global.
 
 La versión 1.0.1 agrega un aviso de actualización. `/api/version` devuelve la versión de .NET desplegada con `Cache-Control: no-store`. Una consulta liviana la compara con el `VERSION` cargado cada tres minutos mientras la página esté visible y al volver a la pestaña (como máximo una consulta por minuto). No activa el loading global ni recarga automáticamente. Actualizar pide confirmación antes de descartar formularios u orden editados; Más tarde oculta ese aviso durante esta visita. Los errores de red o endpoints antiguos son silenciosos. Incrementá VERSION y las versiones del paquete/lockfile en cada entrega; una pestaña ya abierta con 1.0.0 debe recargarse una vez para recibir esta función.
 

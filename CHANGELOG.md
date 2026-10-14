@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.0
+
+- Filter weekly and monthly statistics by one active habit, with All habits as the default.
+- Filtro semanal y mensual por un hábito activo, con Todos los hábitos como opción inicial.
+- Theme-aware habit menu with icons and keyboard navigation; statistics load within their sections instead of blocking the app.
+- Menú de hábitos con colores del tema, iconos y navegación por teclado; carga dentro de las estadísticas sin bloquear la app.
+
 ## 1.0.1
 
 - Notify open tabs when another version is available, with Update and Later actions. Check every three minutes while visible and on returning to the page; no automatic reload. Unsaved forms/order changes require confirmation before updating. Polling failures do not interrupt the app.

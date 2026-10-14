@@ -250,5 +250,9 @@
   "update.later": "Später",
   "update.unsaved": "Du hast ungespeicherte Änderungen. Neu laden und verwerfen?",
   "update.discard": "Neu laden und verwerfen",
-  "update.keepEditing": "Weiter bearbeiten"
+  "update.keepEditing": "Weiter bearbeiten",
+  "stats.filter": "Statistik für",
+  "stats.allHabits": "Alle Gewohnheiten",
+  "stats.filterHelp": "Gilt für Wochenfortschritt und Monatskalender.",
+  "month.filteredHelp": "Es zählt nur die ausgewählte Gewohnheit. Grün bedeutet erledigt; zukünftige Tage zählen nicht."
 }

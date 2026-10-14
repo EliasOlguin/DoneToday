@@ -6,7 +6,7 @@ import { useSession } from '../hooks/useSession'
 import { useNow } from '../hooks/useNow'
 import { formatWeekday, days, formatPercent, formatDate } from '../lib/format'
 
-export default function MonthlyProgress() {
+export default function MonthlyProgress({ habitId }: { habitId?: number }) {
   const { t, i18n } = useTranslation()
   const zone = useSession().data?.timeZoneId ?? 'UTC'
   const now = useNow()
@@ -22,8 +22,9 @@ export default function MonthlyProgress() {
   const [selected, setSelected] = useState<number[] | null>(null)
   const [year, month] = selected ?? current
   const progress = useQuery({
-    queryKey: ['progress', 'month', year, month],
-    queryFn: () => getMonthlyProgress(year, month),
+    queryKey: ['progress', 'month', year, month, habitId ?? null],
+    queryFn: () => getMonthlyProgress(year, month, habitId),
+    meta: { localLoading: true },
   })
   const monthDate = new Date(Date.UTC(year, month - 1, 1))
   const label = new Intl.DateTimeFormat(i18n.resolvedLanguage, {
@@ -128,7 +129,7 @@ export default function MonthlyProgress() {
             })}
           </div>
           <p className="mt-4 text-xs leading-relaxed text-muted">
-            {t('month.help')}
+            {t(habitId ? 'month.filteredHelp' : 'month.help')}
           </p>
         </>
       )}

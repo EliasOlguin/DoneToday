@@ -24,7 +24,7 @@ public class ProgressController : AuthenticatedController
     }
 
     [HttpGet("month")]
-    public async Task<ActionResult<MonthlyProgressResult>> GetMonth(int? year, int? month)
+    public async Task<ActionResult<MonthlyProgressResult>> GetMonth(int? year, int? month, int? habitId = null)
     {
         var today = await _dates.GetTodayAsync(CurrentUserId);
         var requestedYear = year ?? today.Year;
@@ -32,29 +32,26 @@ public class ProgressController : AuthenticatedController
         if (requestedYear is < 1900 or > 9998 || requestedMonth is < 1 or > 12) return BadRequest();
         var start = new DateOnly(requestedYear, requestedMonth, 1);
         if (start > today) return BadRequest();
-        var habits = await _context.Habits.AsNoTracking()
-            .Where(h => h.UserId == CurrentUserId && !h.IsArchived)
+        var habits = await StatisticsHabitFilter.ForUser(_context.Habits.AsNoTracking(), CurrentUserId, habitId)
             .Include(h => h.Schedules).Include(h => h.Completions).ToListAsync();
+        if (habitId.HasValue && habits.Count == 0) return NotFound();
         return Ok(MonthlyProgressService.Calculate(habits, start, today));
     }
 
     [HttpGet("week")]
     public async Task<ActionResult<WeeklyProgressResponse>>
-        GetWeeklyProgress()
+        GetWeeklyProgress(int? habitId = null)
     {
         var userId = CurrentUserId;
 
         var today = await _dates.GetTodayAsync(userId);
 
-        var habits = await _context.Habits
-            .AsNoTracking()
-            .Where(h =>
-                h.UserId == userId &&
-                !h.IsArchived)
+        var habits = await StatisticsHabitFilter.ForUser(_context.Habits.AsNoTracking(), userId, habitId)
             .Include(h => h.Schedules)
             .Include(h => h.Completions)
             .ToListAsync();
 
+        if (habitId.HasValue && habits.Count == 0) return NotFound();
         var result = _progressService.CalculateWeeklyProgress(
             habits,
             today
