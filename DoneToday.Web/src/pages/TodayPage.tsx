@@ -15,6 +15,8 @@ import { useEffect, useState } from 'react'
 import DailyMotivation from '../components/DailyMotivation'
 import HabitProgressControl from '../components/HabitProgressControl'
 import DailyCelebration from '../components/DailyCelebration'
+import EmptyHabitsState from '../components/EmptyHabitsState'
+import { getHabits } from '../api/habits'
 
 export default function TodayPage() {
   const { t, i18n } = useTranslation()
@@ -42,6 +44,12 @@ export default function TodayPage() {
     isPending,
     isError,
   } = useQuery({ queryKey: ['today'], queryFn: getTodayHabits })
+  const allHabits = useQuery({
+    queryKey: ['habits'],
+    queryFn: getHabits,
+    enabled: habits?.length === 0,
+    meta: { localLoading: true },
+  })
   const week = useQuery({
     queryKey: ['progress', 'week'],
     queryFn: () => getWeeklyProgress(),
@@ -70,6 +78,7 @@ export default function TodayPage() {
   ] as const
   const queryClient = useQueryClient()
   const completionMutation = useMutation({
+    meta: { localLoading: true },
     mutationFn: ({ id, isCompleted }: { id: number; isCompleted: boolean }) =>
       isCompleted ? undoHabitCompletion(id) : completeHabit(id),
     onSuccess: async (_, variables) => {
@@ -157,7 +166,7 @@ export default function TodayPage() {
         ))}
       </dl>
       <div className="mt-6 grid gap-6 lg:mt-9 lg:grid-cols-[minmax(0,1.8fr)_minmax(0,1fr)] lg:items-start lg:gap-7">
-        <aside className="order-first min-w-0 lg:order-last">
+        <aside className="order-last min-w-0">
           <WeekProgressCard expanded />
         </aside>
         <div className="min-w-0">
@@ -184,9 +193,15 @@ export default function TodayPage() {
               {t('errors.loadHabits')}
             </p>
           ) : habits.length === 0 ? (
-            <p className="rounded-2xl bg-surface p-5 text-sm text-muted">
-              {t('today.empty')}
-            </p>
+            allHabits.isPending ? (
+              <p role="status" className="text-sm text-muted">
+                {t('habits.loading')}
+              </p>
+            ) : (
+              <EmptyHabitsState
+                first={!allHabits.isError && allHabits.data?.length === 0}
+              />
+            )
           ) : (
             <ul className="space-y-3">
               {habits.map((habit) => (

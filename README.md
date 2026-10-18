@@ -1,5 +1,7 @@
 # DoneToday
 
+UX changes, validation and limitations / Mejoras de experiencia, pruebas y límites: [UX improvements / Mejoras UX](docs/ux-improvements.md).
+
 Security controls, rate/data limits and verification: [Security / Seguridad](docs/security.md). / Controles de seguridad, límites de uso y verificaciones: [Seguridad / Security](docs/security.md).
 
 Deployment preparation / Preparación de despliegue: [Render Free + Neon + Brevo](docs/deployment.md).

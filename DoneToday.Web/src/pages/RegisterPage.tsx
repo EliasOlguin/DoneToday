@@ -8,6 +8,7 @@ import { authPost } from '../api/auth'
 import { Link } from 'react-router'
 import GoogleButton from '../components/GoogleButton'
 import Icon from '../components/ui/Icon'
+import { useEmailResend } from '../hooks/useEmailResend'
 
 export default function RegisterPage() {
   const { t } = useTranslation()
@@ -15,15 +16,21 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('')
   const [confirmation, setConfirmation] = useState('')
   const [mismatch, setMismatch] = useState(false)
+  const resend = useEmailResend(email)
   const register = useMutation({
     mutationFn: () => authPost('register', { email, password }),
     onSuccess: () => {
       setPassword('')
       setConfirmation('')
+      resend.beginCooldown(email)
     },
-  })
-  const resend = useMutation({
-    mutationFn: () => authPost('resend-confirmation', { email }),
+    onError: (error) => {
+      if (error.message === 'email') {
+        setPassword('')
+        setConfirmation('')
+        resend.beginCooldown(email)
+      }
+    },
   })
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -33,7 +40,7 @@ export default function RegisterPage() {
   }
   const awaitingConfirmation =
     register.isSuccess || register.error?.message === 'email'
-  const error = resend.error ?? (resend.isSuccess ? null : register.error)
+  const error = resend.error ?? (resend.sent ? null : register.error)
   return (
     <section
       className="panel mx-auto w-full max-w-md p-6 shadow-sm sm:p-7"
@@ -64,13 +71,27 @@ export default function RegisterPage() {
           <button
             type="button"
             className="btn-primary w-full text-sm"
-            aria-busy={resend.isPending}
-            disabled={resend.isPending || resend.isSuccess}
-            onClick={() => resend.mutate()}
+            aria-busy={resend.pending}
+            disabled={resend.pending || resend.seconds > 0}
+            onClick={resend.send}
           >
-            {resend.isPending ? t('common.processing') : t('auth.resend')}
+            {resend.pending
+              ? t('common.processing')
+              : resend.seconds
+                ? t('ux.resendWait', { seconds: resend.seconds })
+                : t('auth.resend')}
           </button>
-          {resend.isSuccess && (
+          <button
+            type="button"
+            className="min-h-11 text-sm font-medium text-primary"
+            onClick={() => {
+              register.reset()
+              setMismatch(false)
+            }}
+          >
+            {t('ux.changeEmail')}
+          </button>
+          {resend.sent && (
             <p role="status" className="text-sm text-success">
               {t('auth.sent')}
             </p>
@@ -111,6 +132,7 @@ export default function RegisterPage() {
               autoComplete="new-password"
               required
               value={confirmation}
+              maxLength={128}
               onChange={(e) => setConfirmation(e.target.value)}
             />
             {mismatch && (

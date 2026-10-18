@@ -11,26 +11,18 @@ namespace DoneToday.Api.Services.Email;
 public class SmtpEmailSender(IOptions<EmailOptions> options, IHostEnvironment environment) : IEmailSender<User>
 {
     public Task SendConfirmationLinkAsync(User user, string email, string confirmationLink) =>
-        SendLinkAsync(email, "Confirm your DoneToday email", "Confirm email", confirmationLink);
+        SendLinkAsync(email, AccountEmailTemplate.Confirmation(confirmationLink));
 
     public Task SendPasswordResetLinkAsync(User user, string email, string resetLink) =>
-        SendLinkAsync(email, "Reset your DoneToday password", "Reset password", resetLink);
+        SendLinkAsync(email, AccountEmailTemplate.PasswordReset(resetLink));
 
     public Task SendPasswordResetCodeAsync(User user, string email, string resetCode) =>
         SendAsync(email, "Reset your DoneToday password",
             $"Your password reset code is: {resetCode}",
             $"<p>Your password reset code is: <strong>{WebUtility.HtmlEncode(resetCode)}</strong></p>");
 
-    private Task SendLinkAsync(string email, string subject, string action, string link)
-    {
-        if (!Uri.TryCreate(link, UriKind.Absolute, out var uri) ||
-            (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp))
-            throw new ArgumentException("Email links must be absolute HTTP or HTTPS URLs.", nameof(link));
-        return SendAsync(email, subject,
-            $"{action}: {link}\n\nIf you did not request this, you can ignore this email.",
-            $"<h1>DoneToday</h1><p><a href=\"{WebUtility.HtmlEncode(link)}\">{action}</a></p><p>If you did not request this, you can ignore this email.</p>");
-    }
-
+    private Task SendLinkAsync(string email, AccountEmailTemplate.Content content) =>
+        SendAsync(email, content.Subject, content.Text, content.Html);
     private async Task SendAsync(string email, string subject, string text, string html)
     {
         var settings = options.Value;

@@ -16,21 +16,19 @@ public class BrevoEmailOptions
 public class BrevoEmailSender(HttpClient client, IOptions<BrevoEmailOptions> options) : IEmailSender<User>
 {
     public Task SendConfirmationLinkAsync(User user, string email, string confirmationLink) =>
-        SendLink(email, "Confirm your DoneToday email", "Confirm email", confirmationLink);
+        SendLink(email, confirmationLink, AccountEmailTemplate.Confirmation(confirmationLink));
     public Task SendPasswordResetLinkAsync(User user, string email, string resetLink) =>
-        SendLink(email, "Reset your DoneToday password", "Reset password", resetLink);
+        SendLink(email, resetLink, AccountEmailTemplate.PasswordReset(resetLink));
     public Task SendPasswordResetCodeAsync(User user, string email, string resetCode) =>
         Send(email, "Reset your DoneToday password", $"Your password reset code is: {resetCode}",
             $"<p>Your password reset code is: <strong>{WebUtility.HtmlEncode(resetCode)}</strong></p>");
 
-    private Task SendLink(string email, string subject, string action, string link)
+    private Task SendLink(string email, string link, AccountEmailTemplate.Content content)
     {
         if (!Uri.TryCreate(link, UriKind.Absolute, out var uri) || uri.Scheme != "https")
             throw new ArgumentException("Production email links must use HTTPS.", nameof(link));
-        return Send(email, subject, $"{action}: {link}\n\nIf you did not request this, you can ignore this email.",
-            $"<h1>DoneToday</h1><p><a href=\"{WebUtility.HtmlEncode(link)}\">{action}</a></p><p>If you did not request this, you can ignore this email.</p>");
+        return Send(email, content.Subject, content.Text, content.Html);
     }
-
     private async Task Send(string email, string subject, string text, string html)
     {
         var settings = options.Value;

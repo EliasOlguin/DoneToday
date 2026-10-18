@@ -38,6 +38,7 @@ export default function AppUpdate() {
       setConfirming(true)
       return
     }
+    if (confirming) window.dispatchEvent(new Event('update-discard-confirmed'))
     window.location.reload()
   }
   return (

@@ -8,6 +8,7 @@ import Icon from '../components/ui/Icon'
 import { useState } from 'react'
 import HabitOrder from '../components/HabitOrder'
 import MeasurementText from '../components/MeasurementText'
+import EmptyHabitsState from '../components/EmptyHabitsState'
 
 export default function HabitsPage() {
   const { t } = useTranslation()
@@ -54,9 +55,7 @@ export default function HabitsPage() {
             {t('errors.loadHabits')}
           </p>
         ) : habits.length === 0 ? (
-          <p className="rounded-2xl bg-surface p-5 text-sm text-muted">
-            {t('habits.empty')}
-          </p>
+          <EmptyHabitsState />
         ) : (
           <ul
             className={`grid gap-3 lg:grid-cols-2 lg:gap-5 ${ordering ? 'hidden' : ''}`}

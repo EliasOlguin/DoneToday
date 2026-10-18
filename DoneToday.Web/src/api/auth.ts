@@ -52,7 +52,13 @@ export async function authPost<T = void>(
     body: JSON.stringify(body),
   })
   if (!response.ok) {
-    if (response.status === 429) throw new Error('rate')
+    if (response.status === 429)
+      throw Object.assign(new Error('rate'), {
+        retryAfter: Math.min(
+          300,
+          Math.max(1, Number(response.headers.get('Retry-After')) || 60),
+        ),
+      })
     if (response.status === 503) throw new Error('email')
     throw new Error('invalid')
   }

@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Net;
+using System.Net.Http.Json;
 using System.Security.Claims;
 using DoneToday.Api.Controllers;
 using DoneToday.Api.Data;
@@ -18,11 +19,28 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
+using DoneToday.Api.Services.Email;
 
 namespace DoneToday.Tests.Services;
 
 public class SecurityHardeningTests
 {
+    [Fact]
+    public async Task EmailCooldownNormalizesRecipientsDoesNotExtendOnFailureAndIsAtomic()
+    {
+        using var cache = new MemoryCache(new MemoryCacheOptions());
+        var clock = new Clock();
+        var throttle = new RecipientEmailThrottle(cache, clock);
+        var races = await Task.WhenAll(Enumerable.Range(0, 20).Select(_ => Task.Run(() => throttle.Reserve("confirm", "Person@example.test"))));
+        Assert.Single(races, seconds => seconds == 0);
+        Assert.Equal(60, throttle.Reserve("confirm", " person@EXAMPLE.test "));
+        Assert.Equal(0, throttle.Reserve("reset", "person@example.test"));
+        Assert.Equal(0, throttle.Reserve("confirm", "other@example.test"));
+        clock.Now = clock.Now.AddSeconds(45);
+        Assert.Equal(15, throttle.Reserve("confirm", "person@example.test"));
+        clock.Now = clock.Now.AddSeconds(15);
+        Assert.Equal(0, throttle.Reserve("confirm", "person@example.test"));
+    }
     [Theory]
     [InlineData(new[] { 0, 6 }, true)]
     [InlineData(new[] { 0, 1, 2, 3, 4, 5, 6 }, true)]
@@ -198,6 +216,11 @@ public class SecurityHardeningTests
             using var tokenJson = System.Text.Json.JsonDocument.Parse(await tokenResponse.Content.ReadAsStringAsync());
             client.DefaultRequestHeaders.Add("X-CSRF-TOKEN", tokenJson.RootElement.GetProperty("token").GetString());
             client.DefaultRequestHeaders.Add("Cookie", csrfCookie);
+            using var resendUnknown = await client.PostAsJsonAsync("/api/auth/resend-confirmation", new { email = "unknown@example.test" });
+            Assert.Equal(HttpStatusCode.OK, resendUnknown.StatusCode);
+            using var resendAgain = await client.PostAsJsonAsync("/api/auth/resend-confirmation", new { email = "UNKNOWN@example.test" });
+            Assert.Equal(HttpStatusCode.TooManyRequests, resendAgain.StatusCode);
+            Assert.NotNull(resendAgain.Headers.RetryAfter);
             static StringContent DeleteBody() => new("{\"email\":\"audit@example.test\"}", System.Text.Encoding.UTF8, "application/json");
             using var unverifiedDelete = await client.PostAsync("/api/profile/delete", DeleteBody());
             Assert.Equal(HttpStatusCode.Forbidden, unverifiedDelete.StatusCode);
@@ -216,7 +239,7 @@ public class SecurityHardeningTests
             Assert.Equal(HttpStatusCode.Forbidden, repeatedDelete.StatusCode);
             Assert.Equal(1, app.Services.GetRequiredService<SyntheticUsers>().Deleted);
             // The rejected POST above consumed one of this account's write permits.
-            for (var i = 0; i < 56; i++) { using var ok = await client.PostAsync("/api/probe", null); Assert.Equal(HttpStatusCode.OK, ok.StatusCode); }
+            for (var i = 0; i < 54; i++) { using var ok = await client.PostAsync("/api/probe", null); Assert.Equal(HttpStatusCode.OK, ok.StatusCode); }
             using var limited = await client.PostAsync("/api/probe", null);
             Assert.Equal(HttpStatusCode.TooManyRequests, limited.StatusCode);
             client.DefaultRequestHeaders.Remove("X-Test-Account");
@@ -236,7 +259,7 @@ public class SecurityHardeningTests
             Assert.Equal(HttpStatusCode.OK, health.StatusCode);
             client.DefaultRequestHeaders.Remove("X-Test-Account");
             // The three deletion attempts share the same authentication policy.
-            for (var i = 0; i < 17; i++) { using var auth = await client.PostAsync("/api/auth/probe", null); Assert.Equal(HttpStatusCode.OK, auth.StatusCode); }
+            for (var i = 0; i < 15; i++) { using var auth = await client.PostAsync("/api/auth/probe", null); Assert.Equal(HttpStatusCode.OK, auth.StatusCode); }
             using var authLimited = await client.PostAsync("/api/auth/probe", null);
             Assert.Equal(HttpStatusCode.TooManyRequests, authLimited.StatusCode);
         }
@@ -267,6 +290,7 @@ public class SecurityHardeningTests
         public override Task<IList<UserLoginInfo>> GetLoginsAsync(User user) => Task.FromResult<IList<UserLoginInfo>>([new("Google", "linked-account", "Google")]);
         public override Task<bool> IsLockedOutAsync(User user) => Task.FromResult(false);
         public override Task<bool> HasPasswordAsync(User user) => Task.FromResult(false);
+        public override Task<User?> FindByEmailAsync(string email) => Task.FromResult<User?>(null);
         public override Task<bool> CheckPasswordAsync(User user, string password) => Task.FromResult(password == "correct-password");
         public override Task<bool> VerifyTwoFactorTokenAsync(User user, string tokenProvider, string token) => Task.FromResult(token == "123456");
         public override Task<IdentityResult> DeleteAsync(User user) { state.Deleted++; return Task.FromResult(IdentityResult.Success); }

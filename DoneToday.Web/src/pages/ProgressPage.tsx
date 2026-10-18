@@ -58,6 +58,7 @@ export default function ProgressPage() {
       <div className="mt-6 inline-flex min-h-10 items-center rounded-xl bg-primary px-5 text-sm font-semibold text-background">
         {t('week.title')}
       </div>
+      <p className="mt-3 text-sm text-muted">{t('ux.completionsHelp')}</p>
       <div className="mt-4">
         <WeekProgressCard habitId={habitId} localLoading />
       </div>

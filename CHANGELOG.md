@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.2 — 2026-10-18
+
+- Unify confirmation and password-reset emails with a responsive DoneToday design, violet action buttons, copyable fallback links and plain-text alternatives. / Unifica correos de confirmación y recuperación con diseño adaptable, botones violeta, enlaces alternativos y versión de texto.
+
+- Protect unsaved work and quantity retries; improve onboarding, form validation, email resend cooldowns, statistics hierarchy and local loading. / Protege cambios sin guardar y reintentos; mejora primer uso, validación, reenvío de correo, estadísticas y cargas locales.
+- Add interaction/security regressions and document the recipient throttle and account isolation. / Agrega pruebas de interacción y seguridad y documenta límites de correo y aislamiento entre cuentas.
+
 ## 1.2.1 — 2026-10-18
 
 - Patch .NET cryptography dependencies and Docker SDK/runtime, add browser security headers and no-store API caching. / Repara dependencias criptográficas e imagen Docker; agrega cabeceras de seguridad y caché no-store en la API.

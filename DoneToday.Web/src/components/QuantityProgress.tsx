@@ -59,9 +59,13 @@ export default function QuantityProgress({
       <p className="mt-1 text-xs text-muted">
         {formatDate(result.data.startDate)} – {formatDate(result.data.endDate)}
       </p>
-      <p className="mt-2 text-xs leading-relaxed text-muted">
-        {t('measure.statsHelp')}
-      </p>
+      <p className="mt-2 text-sm text-muted">{t('ux.quantitiesHelp')}</p>
+      <details className="mt-2 text-xs text-muted">
+        <summary className="min-h-11 cursor-pointer py-3 text-primary">
+          {t('ux.howCalculated')}
+        </summary>
+        <p className="leading-relaxed">{t('measure.statsHelp')}</p>
+      </details>
       <ul className="mt-4 divide-y divide-muted/10">
         {result.data.habits.map((habit) => (
           <li

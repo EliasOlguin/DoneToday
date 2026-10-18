@@ -40,8 +40,8 @@ export default function MonthlyProgress({ habitId }: { habitId?: number }) {
   }
   return (
     <>
-      <QuantityProgress habitId={habitId} year={year} month={month} />
-      <section className="panel mt-6" aria-label={t('month.title')}>
+      <div className="panel mt-6" role="group" aria-label={t('ux.monthPeriod')}>
+        <p className="mb-2 text-xs text-muted">{t('ux.monthPeriodHelp')}</p>
         <div className="flex items-center justify-between gap-2">
           <button
             type="button"
@@ -52,7 +52,12 @@ export default function MonthlyProgress({ habitId }: { habitId?: number }) {
           >
             ←
           </button>
-          <h2 className="text-center font-semibold capitalize">{label}</h2>
+          <h2
+            className="text-center font-semibold capitalize"
+            aria-live="polite"
+          >
+            {label}
+          </h2>
           <button
             type="button"
             className="h-11 w-11 text-primary disabled:opacity-30"
@@ -63,6 +68,12 @@ export default function MonthlyProgress({ habitId }: { habitId?: number }) {
             →
           </button>
         </div>
+      </div>
+      <QuantityProgress habitId={habitId} year={year} month={month} />
+      <section className="panel mt-6" aria-label={t('month.title')}>
+        <h3 className="text-center font-semibold">
+          {t('month.title')} · <span className="capitalize">{label}</span>
+        </h3>
         {progress.isPending ? (
           <p role="status" className="mt-3 text-sm text-muted">
             {t('stats.loading')}

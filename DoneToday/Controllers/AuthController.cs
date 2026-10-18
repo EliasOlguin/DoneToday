@@ -8,19 +8,21 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication;
+using DoneToday.Api.Services.Email;
 
 namespace DoneToday.Api.Controllers;
 
 [ApiController]
 [Route("api/auth")]
 public class AuthController(UserManager<User> users, SignInManager<User> signIn, IEmailSender<User> emailSender,
-    IConfiguration configuration, IHostEnvironment environment) : ControllerBase
+    IConfiguration configuration, IHostEnvironment environment, RecipientEmailThrottle emailThrottle) : ControllerBase
 {
     [HttpPost("forgot-password")]
     [EnableRateLimiting("authentication")]
     [ValidateCsrf]
     public async Task<IActionResult> ForgotPassword(EmailRequest request)
     {
+        if (EmailCooldown("reset", request.Email) is { } limited) return limited;
         var user = await users.FindByEmailAsync(request.Email.Trim());
         if (user is null || !user.EmailConfirmed || !await users.HasPasswordAsync(user)) return Ok();
         var token = await users.GeneratePasswordResetTokenAsync(user);
@@ -117,11 +119,14 @@ public class AuthController(UserManager<User> users, SignInManager<User> signIn,
     public async Task<IActionResult> Register(RegisterRequest request)
     {
         var email = request.Email.Trim();
-        if (await users.FindByEmailAsync(email) is not null) return Ok();
+        if (await users.FindByEmailAsync(email) is not null) { emailThrottle.Reserve("confirm", email); return Ok(); }
         var user = new User { UserName = email, Email = email };
         var result = await users.CreateAsync(user, request.Password);
         if (!result.Succeeded)
             return BadRequest(new { codes = result.Errors.Select(error => error.Code) });
+        // Reserve only after successful validation/creation; invalid passwords do not
+        // prevent the person correcting their signup immediately.
+        if (emailThrottle.Reserve("confirm", email) > 0) return Ok();
         return await SendConfirmation(user);
     }
 
@@ -130,6 +135,7 @@ public class AuthController(UserManager<User> users, SignInManager<User> signIn,
     [ValidateCsrf]
     public async Task<IActionResult> Resend(EmailRequest request)
     {
+        if (EmailCooldown("confirm", request.Email) is { } limited) return limited;
         var user = await users.FindByEmailAsync(request.Email.Trim());
         return user is null || user.EmailConfirmed ? Ok() : await SendConfirmation(user);
     }
@@ -159,6 +165,14 @@ public class AuthController(UserManager<User> users, SignInManager<User> signIn,
             return StatusCode(503);
         }
         return Ok();
+    }
+
+    private IActionResult? EmailCooldown(string purpose, string email)
+    {
+        var seconds = emailThrottle.Reserve(purpose, email);
+        if (seconds == 0) return null;
+        Response.Headers.RetryAfter = seconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        return StatusCode(429);
     }
 
     private string BuildEmailLink(string path, User user, string token)

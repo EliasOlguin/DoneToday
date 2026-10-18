@@ -14,6 +14,7 @@ public static class ApiSecurity
     public static IServiceCollection AddApiSecurity(this IServiceCollection services)
     {
         services.AddMemoryCache();
+        services.AddSingleton<DoneToday.Api.Services.Email.RecipientEmailThrottle>();
         services.AddSingleton<ReverificationAttempts>();
         services.AddScoped<SensitiveActionVerifier>();
         services.AddSingleton<DeleteAccountVerification>();

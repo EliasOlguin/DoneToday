@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { authPost, getSession } from '../api/auth'
 import GoogleButton from '../components/GoogleButton'
 import PasswordField from '../components/PasswordField'
+import { useEmailResend } from '../hooks/useEmailResend'
 
 export default function LoginPage() {
   const { t } = useTranslation()
@@ -18,9 +19,7 @@ export default function LoginPage() {
   const client = useQueryClient()
   const navigate = useNavigate()
   const location = useLocation()
-  const resend = useMutation({
-    mutationFn: () => authPost('resend-confirmation', { email }),
-  })
+  const resend = useEmailResend(email)
   const login = useMutation({
     mutationFn: async () => {
       if (twoFactor) {
@@ -200,13 +199,15 @@ export default function LoginPage() {
             <button
               type="button"
               className="text-primary underline disabled:opacity-50"
-              disabled={!email || resend.isPending || resend.isSuccess}
-              onClick={() => resend.mutate()}
+              disabled={!email || resend.pending || resend.seconds > 0}
+              onClick={resend.send}
             >
-              {t('auth.resend')}
+              {resend.seconds
+                ? t('ux.resendWait', { seconds: resend.seconds })
+                : t('auth.resend')}
             </button>
-            {resend.isSuccess && <p role="status">{t('auth.sent')}</p>}
-            {resend.isError && (
+            {resend.sent && <p role="status">{t('auth.sent')}</p>}
+            {resend.error && (
               <p role="alert" className="text-danger">
                 {t(
                   resend.error.message === 'rate'

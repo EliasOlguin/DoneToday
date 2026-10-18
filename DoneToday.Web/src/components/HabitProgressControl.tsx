@@ -1,9 +1,12 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import type { HabitProgress } from '../types/HabitProgress'
 import { recordHabitProgress } from '../api/habits'
-import { errorText } from '../api/errors'
+import { ApiError, errorText } from '../api/errors'
+import type { Session } from '../api/auth'
+import type { TodayHabit } from '../types/TodayHabit'
+import type { HabitDetail } from '../types/HabitDetail'
 import { quickAmounts, validMeasurement, wholeUnit } from '../lib/measurements'
 import MeasurementText from './MeasurementText'
 import { useSession } from '../hooks/useSession'
@@ -24,7 +27,18 @@ export default function HabitProgressControl({
   const [value, setValue] = useState('')
   const [invalid, setInvalid] = useState(false)
   const [revision, setRevision] = useState(progress.revision)
-  const timeZone = useSession().data?.timeZoneId ?? 'UTC'
+  const session = useSession()
+  const timeZone = session.data?.timeZoneId ?? 'UTC'
+  type Attempt = {
+    amount: number
+    correction: boolean
+    operationId: string
+    date: string
+    expectedRevision?: number
+    accountId: number
+  }
+  const attempt = useRef<Attempt | null>(null)
+  const [reviewRequired, setReviewRequired] = useState(false)
   const client = useQueryClient()
   const refresh = () =>
     Promise.all(
@@ -34,34 +48,46 @@ export default function HabitProgressControl({
     )
   const save = useMutation({
     meta: { localLoading: true },
-    mutationFn: ({
-      amount,
-      correction,
-      operationId,
-    }: {
-      amount: number
-      correction: boolean
-      operationId: string
-    }) =>
-      recordHabitProgress(
-        id,
-        {
-          amount,
-          date: progress.date,
-          operationId,
-          expectedRevision: correction ? revision : undefined,
-        },
-        correction,
-      ),
-    onSuccess: async () => {
-      setMode(null)
-      setValue('')
-      await refresh()
+    mutationFn: ({ accountId, correction, ...request }: Attempt) => {
+      if (client.getQueryData<Session | null>(['session'])?.id !== accountId)
+        throw new ApiError('auth.sessionExpired')
+      return recordHabitProgress(id, request, correction)
     },
-    onError: async () => {
+    onSuccess: async (saved, request) => {
+      if (
+        client.getQueryData<Session | null>(['session'])?.id !==
+        request.accountId
+      )
+        return
+      client.setQueryData<TodayHabit[]>(['today'], (old) =>
+        old?.map((habit) =>
+          habit.id === id &&
+          habit.progress?.date === saved.date &&
+          habit.progress.revision <= saved.revision
+            ? {
+                ...habit,
+                progress: saved,
+                isCompleted: saved.amount >= saved.target,
+              }
+            : habit,
+        ),
+      )
+      client.setQueryData<HabitDetail>(['habit', id], (old) =>
+        old?.progress?.date === saved.date &&
+        old.progress.revision <= saved.revision
+          ? { ...old, progress: saved }
+          : old,
+      )
+      attempt.current = null
+      setReviewRequired(false)
       setMode(null)
       setValue('')
-      await refresh()
+      await refresh().catch(() => {})
+    },
+    onError: async (error) => {
+      if (error instanceof ApiError && error.key === 'measure.changed')
+        setReviewRequired(true)
+      await refresh().catch(() => {})
     },
   })
   const done = progress.amount >= progress.target
@@ -72,10 +98,24 @@ export default function HabitProgressControl({
       return
     }
     setInvalid(false)
-    save.mutate({ amount, correction, operationId: crypto.randomUUID() })
+    if (attempt.current || !session.data || reviewRequired) return
+    const request = {
+      amount,
+      correction,
+      operationId: crypto.randomUUID(),
+      date: progress.date,
+      expectedRevision: correction ? revision : undefined,
+      accountId: session.data.id,
+    }
+    attempt.current = request
+    save.mutate(request)
   }
   return (
-    <div className="mt-3" aria-label={t('measure.progressFor', { name })}>
+    <div
+      className="mt-3"
+      data-unsaved={save.isPending || save.isError || value !== ''}
+      aria-label={t('measure.progressFor', { name })}
+    >
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
         <p>
           <span className="font-semibold">
@@ -116,7 +156,7 @@ export default function HabitProgressControl({
       {progress.isScheduled ? (
         <>
           <fieldset
-            disabled={save.isPending}
+            disabled={save.isPending || save.isError}
             aria-busy={save.isPending}
             className="mt-3 flex flex-wrap items-center gap-2 disabled:opacity-60"
           >
@@ -205,12 +245,12 @@ export default function HabitProgressControl({
                   max={1_000_000}
                   step={wholeUnit(progress.unit) ? 1 : 0.001}
                   value={value}
-                  disabled={save.isPending}
+                  disabled={save.isPending || save.isError}
                   onChange={(event) => setValue(event.target.value)}
                 />
                 <button
                   type="submit"
-                  disabled={save.isPending || value === ''}
+                  disabled={save.isPending || save.isError || value === ''}
                   aria-busy={save.isPending}
                   className="btn-primary text-xs"
                 >
@@ -218,7 +258,7 @@ export default function HabitProgressControl({
                 </button>
                 <button
                   type="button"
-                  disabled={save.isPending}
+                  disabled={save.isPending || save.isError}
                   onClick={() => {
                     setMode(null)
                     setValue('')
@@ -239,6 +279,41 @@ export default function HabitProgressControl({
         <p role="status" className="mt-2 text-xs text-muted">
           {t('common.saving')}
         </p>
+      )}
+      {save.isError && (
+        <div className="mt-3 rounded-xl border border-danger/20 p-3">
+          <p className="text-xs text-muted">
+            {t(reviewRequired ? 'ux.quantityConflict' : 'ux.quantityUncertain')}
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {!reviewRequired && (
+              <button
+                type="button"
+                className="btn-primary text-xs"
+                onClick={() => {
+                  if (attempt.current) save.mutate(attempt.current)
+                }}
+              >
+                {t('common.retry')}
+              </button>
+            )}
+            <button
+              type="button"
+              className="min-h-11 px-2 text-xs text-primary"
+              onClick={() => {
+                attempt.current = null
+                setReviewRequired(false)
+                save.reset()
+                setMode('correct')
+                setValue(String(progress.amount))
+                setRevision(progress.revision)
+                setInvalid(false)
+              }}
+            >
+              {t('ux.reviewTotal')}
+            </button>
+          </div>
+        </div>
       )}
       {invalid && (
         <p role="alert" className="mt-2 text-xs text-danger">
