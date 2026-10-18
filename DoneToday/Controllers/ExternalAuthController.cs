@@ -15,7 +15,8 @@ namespace DoneToday.Api.Controllers;
 [ApiController]
 [Route("api/auth/external")]
 public class ExternalAuthController(UserManager<User> users, SignInManager<User> signIn,
-    IConfiguration configuration, AppDbContext database) : ControllerBase
+    IConfiguration configuration, AppDbContext database, SensitiveActionVerifier verification,
+    DeleteAccountVerification deleteVerification) : ControllerBase
 {
     [HttpGet("providers")]
     public async Task<IActionResult> Providers() => Ok(new {
@@ -52,14 +53,32 @@ public class ExternalAuthController(UserManager<User> users, SignInManager<User>
         if (!await GoogleEnabled()) return NotFound();
         var user = await users.GetUserAsync(User);
         if (user is null) return Unauthorized();
-        var password = await signIn.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true);
-        if (!password.Succeeded || (user.TwoFactorEnabled &&
-            !await users.VerifyTwoFactorTokenAsync(user, users.Options.Tokens.AuthenticatorTokenProvider,
-                (request.Code ?? "").Replace(" ", "").Replace("-", ""))))
+        if (!await verification.Password(user, request.Password) || (user.TwoFactorEnabled &&
+            !await verification.Code(user, request.Code)))
             return Back("/settings/connections", "verification");
+        await verification.Complete(user);
         await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
         var properties = signIn.ConfigureExternalAuthenticationProperties("Google", "/api/auth/external/callback", user.Id.ToString());
         properties.Items["linkUserId"] = user.Id.ToString();
+        return Challenge(properties, "Google");
+    }
+
+    [HttpPost("verify-google-delete")]
+    [Authorize(Policy = "ApplicationUser")]
+    [ValidateCsrf]
+    [EnableRateLimiting("authentication")]
+    public async Task<IActionResult> VerifyGoogleDelete()
+    {
+        if (!await GoogleEnabled()) return NotFound();
+        var user = await users.GetUserAsync(User);
+        if (user is null || !(await users.GetLoginsAsync(user)).Any(login => login.LoginProvider == "Google")) return BadRequest();
+        if (!await verification.CanAttempt(user)) return StatusCode(429);
+        Response.Cookies.Delete(DeleteAccountVerification.CookieName, DeleteAccountVerification.Cookie);
+        await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+        var properties = signIn.ConfigureExternalAuthenticationProperties("Google", "/api/auth/external/callback", user.Id.ToString());
+        properties.Items["deleteUserId"] = user.Id.ToString();
+        properties.ExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(5);
+        properties.SetParameter("prompt", "select_account consent");
         return Challenge(properties, "Google");
     }
 
@@ -72,9 +91,20 @@ public class ExternalAuthController(UserManager<User> users, SignInManager<User>
             var ticket = await HttpContext.AuthenticateAsync(IdentityConstants.ExternalScheme);
             string? linkUserId = null;
             ticket.Properties?.Items.TryGetValue("linkUserId", out linkUserId);
-            var info = await signIn.GetExternalLoginInfoAsync(linkUserId);
+            string? deleteUserId = null;
+            ticket.Properties?.Items.TryGetValue("deleteUserId", out deleteUserId);
+            var info = await signIn.GetExternalLoginInfoAsync(deleteUserId ?? linkUserId);
             if (info is null || info.LoginProvider != "Google" || !GoogleAuthentication.HasVerifiedEmail(info.Principal))
                 return Back("/login", "failed");
+            if (deleteUserId is not null)
+            {
+                var user = await users.GetUserAsync(User);
+                if (user is null || !await verification.CanAttempt(user) ||
+                    !GoogleAuthentication.MatchesDeletionAccount(user.Id, deleteUserId, info.ProviderKey, await users.GetLoginsAsync(user)))
+                    return Back("/settings", "verification");
+                Response.Cookies.Append(DeleteAccountVerification.CookieName, deleteVerification.Issue(user), DeleteAccountVerification.Cookie);
+                return Redirect(new Uri(GoogleAuthentication.Frontend(configuration), "/settings?deleteVerified=1").AbsoluteUri);
+            }
             if (linkUserId is not null)
             {
                 var user = await users.GetUserAsync(User);

@@ -19,5 +19,6 @@ public class CreateHabitRequest : DoneToday.Api.Dtos.Habits.HabitGoalRequest
 
     [Required]
     [MinLength(1)]
+    [MaxLength(7), DoneToday.Api.Dtos.Habits.ValidWeekdays]
     public List<DayOfWeek> DaysOfWeek { get; set; } = [];
 }

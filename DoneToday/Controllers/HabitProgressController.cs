@@ -33,6 +33,8 @@ public class HabitProgressController(AppDbContext db, UserDateService dates) : A
         // A retried request must never count twice, even if midnight has passed.
         if (await db.HabitProgressEntries.AnyAsync(e => e.HabitId == id && e.OperationId == request.OperationId))
             return Ok(HabitProgressResponse.ForDate(habit, today, true));
+        if ((habit.Progress.FirstOrDefault(p => p.Date == today)?.Entries.Count ?? 0) >= ApiSecurity.MaximumDailyEntriesPerHabit)
+            return StatusCode(429, new { code = "entryQuota" });
         var goal = HabitGoalService.ForDate(habit, today);
         if (goal?.Target is null || goal.Unit is null) return Conflict(new { code = "notMeasured" });
         if (!HabitGoalService.Scheduled(habit, today)) return Conflict(new { code = "notScheduled" });

@@ -19,5 +19,6 @@ public class UpdateHabitRequest : HabitGoalRequest
 
     [Required]
     [MinLength(1)]
+    [MaxLength(7), ValidWeekdays]
     public List<DayOfWeek> DaysOfWeek { get; set; } = [];
 }

@@ -28,6 +28,10 @@ public class HabitsController : AuthenticatedController
     {
         var userId = CurrentUserId;
         var today = await _dates.GetTodayAsync(userId);
+        await using var transaction = await _context.Database.BeginTransactionAsync(HttpContext.RequestAborted);
+        await _context.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(71355, {userId})", HttpContext.RequestAborted);
+        if (await _context.Habits.CountAsync(h => h.UserId == userId, HttpContext.RequestAborted) >= ApiSecurity.MaximumHabits)
+            return StatusCode(429, new { code = "habitQuota" });
         var habit = new Habit
         {
             UserId = userId,
@@ -54,6 +58,7 @@ public class HabitsController : AuthenticatedController
         _context.Habits.Add(habit);
 
         await _context.SaveChangesAsync();
+        await transaction.CommitAsync(HttpContext.RequestAborted);
         var response = new HabitResponse
         {
             Id = habit.Id,
@@ -155,7 +160,8 @@ public class HabitsController : AuthenticatedController
     {
         var userId = CurrentUserId;
         await using var transaction = await _context.Database.BeginTransactionAsync();
-        await _context.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(71354, {id})");
+        if (!await _context.Habits.AnyAsync(h => h.Id == id && h.UserId == userId && !h.IsArchived, HttpContext.RequestAborted)) return NotFound();
+        await _context.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(71354, {id})", HttpContext.RequestAborted);
 
         var habit = await _context.Habits
             .Include(h => h.Schedules)

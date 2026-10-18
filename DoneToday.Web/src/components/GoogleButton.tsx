@@ -6,10 +6,12 @@ import { useTranslation } from 'react-i18next'
 export default function GoogleButton({
   link = false,
   separator = false,
+  verifyDelete = false,
   children,
 }: {
   link?: boolean
   separator?: boolean
+  verifyDelete?: boolean
   children?: ReactNode
 }) {
   const { t } = useTranslation()
@@ -57,7 +59,11 @@ export default function GoogleButton({
       <form
         method="post"
         action={
-          link ? '/api/auth/external/link-google' : '/api/auth/external/google'
+          verifyDelete
+            ? '/api/auth/external/verify-google-delete'
+            : link
+              ? '/api/auth/external/link-google'
+              : '/api/auth/external/google'
         }
         onSubmit={submit}
         className="mt-5 space-y-4"
@@ -89,7 +95,13 @@ export default function GoogleButton({
             />
           </svg>
           {t(
-            pending ? 'auth.loading' : link ? 'google.link' : 'google.continue',
+            pending
+              ? 'auth.loading'
+              : verifyDelete
+                ? 'profile.verifyGoogle'
+                : link
+                  ? 'google.link'
+                  : 'google.continue',
           )}
         </button>
         {error && (

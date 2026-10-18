@@ -229,3 +229,8 @@ npm run test:query
 npm run test:install
 npm run test:session
 ```
+# Security / Seguridad
+
+The API enforces per-account/IP limits and data quotas; Google-only account deletion requires a fresh Google verification followed by explicit confirmation. / La API aplica límites por cuenta/IP y cuotas; borrar una cuenta de Google requiere verificarla nuevamente y confirmar el borrado.
+
+See / Ver [security documentation / documentación de seguridad](../docs/security.md).

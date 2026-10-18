@@ -10,6 +10,19 @@ export async function apiFetch(url: string, options: RequestInit = {}) {
     headers.set('X-CSRF-TOKEN', token)
   }
   const response = await fetch(url, { ...options, headers })
+  if (response.status === 429 && !url.startsWith('/api/auth/')) {
+    const details = (await response
+      .clone()
+      .json()
+      .catch(() => null)) as { code?: string } | null
+    throw new ApiError(
+      details?.code === 'habitQuota'
+        ? 'errors.habitQuota'
+        : details?.code === 'entryQuota'
+          ? 'errors.entryQuota'
+          : 'errors.rateLimited',
+    )
+  }
   if (
     response.status === 401 &&
     (!url.startsWith('/api/auth/') ||

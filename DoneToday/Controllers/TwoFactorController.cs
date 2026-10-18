@@ -3,6 +3,7 @@ using DoneToday.Api.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using DoneToday.Api.Services;
 
 namespace DoneToday.Api.Controllers;
 
@@ -10,7 +11,7 @@ namespace DoneToday.Api.Controllers;
 [Route("api/auth/two-factor")]
 [ValidateCsrf]
 [EnableRateLimiting("authentication")]
-public class TwoFactorController(UserManager<User> users, SignInManager<User> signIn) : AuthenticatedController
+public class TwoFactorController(UserManager<User> users, SignInManager<User> signIn, SensitiveActionVerifier verification) : AuthenticatedController
 {
     [HttpGet]
     public async Task<IActionResult> Status()
@@ -39,6 +40,7 @@ public class TwoFactorController(UserManager<User> users, SignInManager<User> si
             await signIn.RefreshSignInAsync(user);
         }
         var uri = $"otpauth://totp/{Uri.EscapeDataString("DoneToday:" + user.Email)}?secret={key}&issuer=DoneToday&digits=6";
+        await verification.Complete(user);
         return Ok(new { sharedKey = key, authenticatorUri = uri });
     }
 
@@ -52,6 +54,7 @@ public class TwoFactorController(UserManager<User> users, SignInManager<User> si
         if (!(await users.SetTwoFactorEnabledAsync(user, true)).Succeeded) return BadRequest();
         var codes = await users.GenerateNewTwoFactorRecoveryCodesAsync(user, 10);
         await users.UpdateSecurityStampAsync(user);
+        await verification.Complete(user);
         await signIn.RefreshSignInAsync(user);
         return Ok(new { recoveryCodes = codes });
     }
@@ -64,6 +67,7 @@ public class TwoFactorController(UserManager<User> users, SignInManager<User> si
         if (user is null || !await users.GetTwoFactorEnabledAsync(user) ||
             !await VerifyCode(user, request.Code)) return BadRequest();
         var codes = await users.GenerateNewTwoFactorRecoveryCodesAsync(user, 10);
+        await verification.Complete(user);
         return Ok(new { recoveryCodes = codes });
     }
 
@@ -72,14 +76,13 @@ public class TwoFactorController(UserManager<User> users, SignInManager<User> si
     {
         var user = await VerifyPassword(request.Password);
         if (user is null || !await users.GetTwoFactorEnabledAsync(user)) return BadRequest();
-        var verified = request.RecoveryCode
-            ? (await users.RedeemTwoFactorRecoveryCodeAsync(user, request.Code.Trim())).Succeeded
-            : await VerifyCode(user, request.Code);
+        var verified = await verification.Code(user, request.Code, request.RecoveryCode);
         if (!verified) return BadRequest();
         if (!(await users.SetTwoFactorEnabledAsync(user, false)).Succeeded) return BadRequest();
         await users.GenerateNewTwoFactorRecoveryCodesAsync(user, 0);
         await users.ResetAuthenticatorKeyAsync(user);
         await users.UpdateSecurityStampAsync(user);
+        await verification.Complete(user);
         await signIn.RefreshSignInAsync(user);
         return NoContent();
     }
@@ -88,12 +91,10 @@ public class TwoFactorController(UserManager<User> users, SignInManager<User> si
     {
         var user = await users.GetUserAsync(User);
         if (user is null) return null;
-        var result = await signIn.CheckPasswordSignInAsync(user, password, lockoutOnFailure: true);
-        return result.Succeeded ? user : null;
+        return await verification.Password(user, password) ? user : null;
     }
 
-    private Task<bool> VerifyCode(User user, string code) => users.VerifyTwoFactorTokenAsync(user,
-        users.Options.Tokens.AuthenticatorTokenProvider, code.Replace(" ", "").Replace("-", ""));
+    private Task<bool> VerifyCode(User user, string code) => verification.Code(user, code);
 }
 
 public record PasswordVerification([Required, MaxLength(128)] string Password);

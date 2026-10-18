@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.1 — 2026-10-18
+
+- Patch .NET cryptography dependencies and Docker SDK/runtime, add browser security headers and no-store API caching. / Repara dependencias criptográficas e imagen Docker; agrega cabeceras de seguridad y caché no-store en la API.
+- Limit API frequency/concurrency, request bodies and database commands; enforce transactional habit and daily-ledger quotas. / Limita frecuencia, concurrencia, cuerpos y comandos de DB; aplica cuotas transaccionales de hábitos y registros diarios.
+- Require fresh same-account Google verification before account deletion, with a five-minute, single-use HttpOnly proof; count sensitive verification failures per account. / Exige verificar la misma cuenta Google antes del borrado con prueba HttpOnly de cinco minutos y un uso; cuenta fallos de reverificación por usuario.
+- Validate all weekdays and sensitive-field lengths, ignore secret file patterns, and add security regression tests and bilingual documentation. / Valida días y longitudes, excluye archivos de secretos y agrega pruebas y documentación bilingüe de seguridad.
+
 ## 1.2.0 — 2026-10-14
 
 - Celebrate all daily habits completed with a dismissible illustrated dialog, once per account/day in this browser, respecting reduced motion. / Festejo ilustrado al completar todos los hábitos diarios, una vez por cuenta y día en este navegador, respetando movimiento reducido.

@@ -1,5 +1,7 @@
 # DoneToday
 
+Security controls, rate/data limits and verification: [Security / Seguridad](docs/security.md). / Controles de seguridad, límites de uso y verificaciones: [Seguridad / Security](docs/security.md).
+
 Deployment preparation / Preparación de despliegue: [Render Free + Neon + Brevo](docs/deployment.md).
 
 [English](#english) · [Español](#español)

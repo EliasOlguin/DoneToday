@@ -12,7 +12,8 @@ namespace DoneToday.Api.Controllers;
 [ApiController]
 [Route("api/profile")]
 [ValidateCsrf]
-public class ProfileController(AppDbContext context, UserManager<User> users, SignInManager<User> signIn) : AuthenticatedController
+public class ProfileController(AppDbContext context, UserManager<User> users, SignInManager<User> signIn,
+    SensitiveActionVerifier verification, DeleteAccountVerification deleteVerification) : AuthenticatedController
 {
     [HttpPost("name")]
     public async Task<IActionResult> SetName(ProfileNameRequest request)
@@ -30,14 +31,26 @@ public class ProfileController(AppDbContext context, UserManager<User> users, Si
         var user = await users.GetUserAsync(User);
         if (user is null) return Unauthorized();
         if (!string.Equals(request.Email.Trim(), user.Email, StringComparison.OrdinalIgnoreCase)) return BadRequest();
-        if (await users.HasPasswordAsync(user) &&
-            (string.IsNullOrEmpty(request.Password) || !await users.CheckPasswordAsync(user, request.Password))) return BadRequest();
-        if (user.TwoFactorEnabled && !await users.VerifyTwoFactorTokenAsync(user,
-            TokenOptions.DefaultAuthenticatorProvider, request.AuthenticatorCode?.Replace(" ", "").Replace("-", "") ?? "")) return BadRequest();
+        if (!await verification.CanAttempt(user)) return StatusCode(429);
+        var hasPassword = await users.HasPasswordAsync(user);
+        if (hasPassword && !await verification.Password(user, request.Password)) return BadRequest();
+        if (!hasPassword && !deleteVerification.Check(user, Request.Cookies[DeleteAccountVerification.CookieName]))
+            return StatusCode(403, new { code = "reauthenticationRequired" });
+        if (user.TwoFactorEnabled && !await verification.Code(user, request.AuthenticatorCode)) return BadRequest();
+        if (!hasPassword && !deleteVerification.Check(user, Request.Cookies[DeleteAccountVerification.CookieName], consume: true))
+            return StatusCode(403, new { code = "reauthenticationRequired" });
         var result = await users.DeleteAsync(user);
         if (!result.Succeeded) return BadRequest();
+        await verification.Complete(user);
+        Response.Cookies.Delete(DeleteAccountVerification.CookieName, DeleteAccountVerification.Cookie);
         await signIn.SignOutAsync();
         return NoContent();
+    }
+    [HttpGet("delete-verification")]
+    public async Task<IActionResult> DeleteVerification()
+    {
+        var user = await users.GetUserAsync(User);
+        return user is null ? Unauthorized() : Ok(new { verified = deleteVerification.Check(user, Request.Cookies[DeleteAccountVerification.CookieName]) });
     }
     [HttpPost("time-zone")]
     public async Task<IActionResult> SetTimeZone(TimeZoneRequest request)
@@ -60,4 +73,5 @@ public record ProfileNameRequest
 {
     [MaxLength(60)] public string? DisplayName { get; init; }
 }
-public record DeleteAccountRequest([Required, EmailAddress] string Email, string? Password, string? AuthenticatorCode);
+public record DeleteAccountRequest([Required, EmailAddress, MaxLength(256)] string Email,
+    [MaxLength(128)] string? Password, [MaxLength(100)] string? AuthenticatorCode);

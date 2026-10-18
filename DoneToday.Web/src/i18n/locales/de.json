@@ -1,4 +1,11 @@
 {
+  "profile.verifyGoogle": "Mit Google bestätigen",
+  "profile.verifyGoogleHelp": "Bestätige vor dem Löschen erneut dasselbe Google-Konto. Bestätige danach hier die Löschung.",
+  "profile.googleVerified": "Google-Konto bestätigt. Du kannst die Löschung innerhalb von fünf Minuten bestätigen.",
+  "profile.reverifyRequired": "Bestätige dein Google-Konto erneut, bevor du dein Konto löschst.",
+  "errors.rateLimited": "Zu viele Anfragen. Bitte warte einen Moment und versuche es erneut.",
+  "errors.habitQuota": "Du hast das Limit von 200 Gewohnheiten einschließlich archivierter Gewohnheiten erreicht.",
+  "errors.entryQuota": "Du hast heute das Limit von 200 Mengeneinträgen für diese Gewohnheit erreicht.",
   "auth.habitsEyebrow": "Raum für dich",
   "auth.habitsTitle": "Kleine Gewohnheiten.\nMehr du.",
   "auth.habitsDescription": "Eine Seite. Ein Schritt.\nEin Tag nach dem anderen.",

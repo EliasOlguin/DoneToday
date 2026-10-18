@@ -6,6 +6,10 @@ namespace DoneToday.Api.Services;
 
 public static class GoogleAuthentication
 {
+    public static bool MatchesDeletionAccount(int signedInUserId, string intendedUserId, string providerKey,
+        IEnumerable<Microsoft.AspNetCore.Identity.UserLoginInfo> logins) =>
+        signedInUserId.ToString(System.Globalization.CultureInfo.InvariantCulture) == intendedUserId &&
+        logins.Any(login => login.LoginProvider == "Google" && login.ProviderKey == providerKey);
     public static Uri Frontend(IConfiguration configuration)
     {
         if (!Uri.TryCreate(configuration["Authentication:FrontendUrl"], UriKind.Absolute, out var uri) ||

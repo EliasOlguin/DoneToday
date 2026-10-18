@@ -1,4 +1,11 @@
 {
+  "profile.verifyGoogle": "Verificar con Google",
+  "profile.verifyGoogleHelp": "Antes de borrar tu cuenta, verificá nuevamente la misma cuenta de Google. Después confirmá el borrado aquí.",
+  "profile.googleVerified": "Cuenta de Google verificada. Podés confirmar el borrado durante cinco minutos.",
+  "profile.reverifyRequired": "Volvé a verificar con Google antes de borrar tu cuenta.",
+  "errors.rateLimited": "Demasiadas solicitudes. Esperá un momento y volvé a intentar.",
+  "errors.habitQuota": "Alcanzaste el límite de 200 hábitos, incluidos los archivados.",
+  "errors.entryQuota": "Alcanzaste el límite de 200 registros de cantidades para este hábito hoy.",
   "auth.habitsEyebrow": "Un espacio para vos",
   "auth.habitsTitle": "Pequeños hábitos.\nMás de vos.",
   "auth.habitsDescription": "Una página. Un paso.\nUn día a la vez.",

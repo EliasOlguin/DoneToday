@@ -1,4 +1,11 @@
 {
+  "profile.verifyGoogle": "Verify with Google",
+  "profile.verifyGoogleHelp": "Before deleting your account, verify the same Google account again. Then confirm the deletion here.",
+  "profile.googleVerified": "Google account verified. You can confirm deletion within five minutes.",
+  "profile.reverifyRequired": "Verify with Google again before deleting your account.",
+  "errors.rateLimited": "Too many requests. Please wait a moment and try again.",
+  "errors.habitQuota": "You have reached the limit of 200 habits, including archived habits.",
+  "errors.entryQuota": "You have reached the limit of 200 quantity records for this habit today.",
   "auth.habitsEyebrow": "Make room for you",
   "auth.habitsTitle": "Little habits.\nMore you.",
   "auth.habitsDescription": "One page. One step.\nOne day at a time.",

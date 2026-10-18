@@ -25,6 +25,7 @@ export async function deleteAccount(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password, authenticatorCode }),
   })
+  if (response.status === 403) throw new ApiError('profile.reverifyRequired')
   if (!response.ok) throw new ApiError('profile.deleteError')
 }
 
