@@ -262,6 +262,16 @@ public class SecurityHardeningTests
             for (var i = 0; i < 15; i++) { using var auth = await client.PostAsync("/api/auth/probe", null); Assert.Equal(HttpStatusCode.OK, auth.StatusCode); }
             using var authLimited = await client.PostAsync("/api/auth/probe", null);
             Assert.Equal(HttpStatusCode.TooManyRequests, authLimited.StatusCode);
+            // Exercise the real controller endpoints after exhausting the shared IP budget.
+            foreach (var path in new[] { "/api/auth/login", "/api/auth/two-factor/login", "/api/auth/register",
+                "/api/auth/forgot-password", "/api/auth/confirm-email", "/api/profile/delete" })
+            {
+                using var rejected = await client.PostAsJsonAsync(path, new { });
+                Assert.Equal(HttpStatusCode.TooManyRequests, rejected.StatusCode);
+                Assert.NotNull(rejected.Headers.RetryAfter);
+            }
+            using var deletionVerification = await client.GetAsync("/api/profile/delete-verification");
+            Assert.Equal(HttpStatusCode.TooManyRequests, deletionVerification.StatusCode);
         }
         finally { await app.StopAsync(); }
     }

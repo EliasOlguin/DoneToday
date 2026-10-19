@@ -15,7 +15,16 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDoneTodayIdentity();
 builder.Services.AddDoneTodayGoogle(builder.Configuration);
 builder.Services.AddApiSecurity();
-builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestBodySize = ApiSecurity.MaximumBodyBytes);
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.AddServerHeader = false;
+    options.Limits.MaxRequestBodySize = ApiSecurity.MaximumBodyBytes;
+});
+builder.Services.AddHsts(options =>
+{
+    options.MaxAge = TimeSpan.FromDays(365);
+    options.IncludeSubDomains = true;
+});
 builder.Services.AddAntiforgery(options =>
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always);
 
@@ -66,7 +75,7 @@ app.UseBrowserSecurity(app.Environment.IsDevelopment());
 app.UseHttpsRedirection();
 if (!app.Environment.IsDevelopment()) app.UseHsts();
 app.UseDefaultFiles();
-app.UseStaticFiles();
+app.UseStaticFiles(SpaHosting.StaticFiles());
 
 app.Use((context, next) => app.Services.GetRequiredService<EarlyRequestLimiter>().Invoke(context, next));
 app.UseAuthentication();
@@ -83,6 +92,6 @@ app.MapGet("/api/version", (HttpContext context) =>
 // API errors must stay API responses rather than returning the SPA HTML.
 app.MapMethods("/api/{**path}", new[] { "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS" },
     () => Results.NotFound());
-if (!app.Environment.IsDevelopment()) app.MapFallbackToFile("index.html");
+if (!app.Environment.IsDevelopment()) app.MapDoneTodayFallback();
 
 app.Run();

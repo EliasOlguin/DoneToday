@@ -9,6 +9,10 @@ test.each(['es', 'en', 'de'])(
   'sends the selected %s UI language for registration, resend and recovery',
   async (language) => {
     await i18n.changeLanguage(language)
+    const catalog = await import(`../src/i18n/locales/${language}.json`)
+    expect(i18n.hasResourceBundle(language, 'translation')).toBe(true)
+    expect(i18n.t('common.notFound')).toBe(catalog.default['common.notFound'])
+    expect(document.documentElement.lang).toBe(language)
     vi.mocked(apiFetch).mockImplementation(
       async () => new Response(null, { status: 204 }),
     )

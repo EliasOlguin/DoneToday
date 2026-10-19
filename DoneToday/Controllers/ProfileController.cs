@@ -60,6 +60,7 @@ public class ProfileController(AppDbContext context, UserManager<User> users, Si
         return NoContent();
     }
     [HttpGet("delete-verification")]
+    [EnableRateLimiting("authentication")]
     public async Task<IActionResult> DeleteVerification()
     {
         var user = await users.GetUserAsync(User);
