@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { authPost } from '../api/auth'
 
-export function useEmailResend(email: string) {
+export function useEmailResend(email: string, path = 'resend-confirmation') {
   const recipient = email.trim().toLowerCase()
   const [cooldown, setCooldown] = useState({ email: '', until: 0 })
   const [now, setNow] = useState(Date.now)
@@ -11,13 +11,12 @@ export function useEmailResend(email: string) {
     setNow(current)
     setCooldown({
       email: address.trim().toLowerCase(),
-      until: current + Math.min(300, Math.max(1, seconds)) * 1000,
+      until: current + Math.min(86_400, Math.max(1, seconds)) * 1000,
     })
   }
   const mutation = useMutation({
     meta: { localLoading: true },
-    mutationFn: ({ email }: { email: string }) =>
-      authPost('resend-confirmation', { email }),
+    mutationFn: ({ email }: { email: string }) => authPost(path, { email }),
     onSettled: (_, error, request) =>
       beginCooldown(
         request.email,

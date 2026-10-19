@@ -24,6 +24,19 @@ public class ProfileController(AppDbContext context, UserManager<User> users, Si
         return Ok(new { displayName = string.IsNullOrEmpty(name) ? null : name });
     }
 
+    [HttpPost("guest/delete")]
+    [EnableRateLimiting("authentication")]
+    public async Task<IActionResult> DeleteGuest(GuestDeleteRequest request)
+    {
+        var user = await users.GetUserAsync(User);
+        if (!request.Confirm || user is null || !user.IsGuest || await users.HasPasswordAsync(user) ||
+            (await users.GetLoginsAsync(user)).Count != 0) return BadRequest();
+        if (!(await users.DeleteAsync(user)).Succeeded) return BadRequest();
+        GuestRegistration.Clear(HttpContext);
+        await signIn.SignOutAsync();
+        return NoContent();
+    }
+
     [HttpPost("delete")]
     [EnableRateLimiting("authentication")]
     public async Task<IActionResult> DeleteAccount(DeleteAccountRequest request)
@@ -75,3 +88,5 @@ public record ProfileNameRequest
 }
 public record DeleteAccountRequest([Required, EmailAddress, MaxLength(256)] string Email,
     [MaxLength(128)] string? Password, [MaxLength(100)] string? AuthenticatorCode);
+
+public record GuestDeleteRequest(bool Confirm);

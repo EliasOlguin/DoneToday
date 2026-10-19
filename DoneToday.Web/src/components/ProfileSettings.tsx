@@ -77,7 +77,7 @@ export default function ProfileSettings({
         >
           <h2 className="font-semibold">{t('profile.title')}</h2>
           <p className="mt-1 break-all text-sm text-muted">
-            {session.data?.email}
+            {session.data?.isGuest ? t('guest.title') : session.data?.email}
           </p>
           <label
             htmlFor="display-name"

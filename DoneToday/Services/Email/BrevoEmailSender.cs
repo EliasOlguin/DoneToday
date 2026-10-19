@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using System.Net;
 using DoneToday.Api.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
@@ -13,15 +12,17 @@ public class BrevoEmailOptions
     public string FromName { get; set; } = "DoneToday";
 }
 
-public class BrevoEmailSender(HttpClient client, IOptions<BrevoEmailOptions> options) : IEmailSender<User>
+public class BrevoEmailSender(HttpClient client, IOptions<BrevoEmailOptions> options, IHttpContextAccessor? request = null) : IEmailSender<User>
 {
     public Task SendConfirmationLinkAsync(User user, string email, string confirmationLink) =>
-        SendLink(email, confirmationLink, AccountEmailTemplate.Confirmation(confirmationLink));
+        SendLink(email, confirmationLink, AccountEmailTemplate.Confirmation(confirmationLink, EmailLanguage.FromRequest(request)));
     public Task SendPasswordResetLinkAsync(User user, string email, string resetLink) =>
-        SendLink(email, resetLink, AccountEmailTemplate.PasswordReset(resetLink));
-    public Task SendPasswordResetCodeAsync(User user, string email, string resetCode) =>
-        Send(email, "Reset your DoneToday password", $"Your password reset code is: {resetCode}",
-            $"<p>Your password reset code is: <strong>{WebUtility.HtmlEncode(resetCode)}</strong></p>");
+        SendLink(email, resetLink, AccountEmailTemplate.PasswordReset(resetLink, EmailLanguage.FromRequest(request)));
+    public Task SendPasswordResetCodeAsync(User user, string email, string resetCode)
+    {
+        var content = AccountEmailTemplate.PasswordResetCode(resetCode, EmailLanguage.FromRequest(request));
+        return Send(email, content.Subject, content.Text, content.Html);
+    }
 
     private Task SendLink(string email, string link, AccountEmailTemplate.Content content)
     {

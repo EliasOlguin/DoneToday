@@ -1,7 +1,9 @@
+import i18n from '../i18n'
 import { apiFetch } from './client'
 import { detectTimeZone, saveTimeZone } from './profile'
 
 export type Session = {
+  isGuest: boolean
   id: number
   email: string
   timeZoneId: string | null
@@ -48,14 +50,17 @@ export async function authPost<T = void>(
 ): Promise<T> {
   const response = await apiFetch(`/api/auth/${path}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-App-Language': i18n.resolvedLanguage ?? i18n.language ?? 'en',
+    },
     body: JSON.stringify(body),
   })
   if (!response.ok) {
     if (response.status === 429)
       throw Object.assign(new Error('rate'), {
         retryAfter: Math.min(
-          300,
+          86_400,
           Math.max(1, Number(response.headers.get('Retry-After')) || 60),
         ),
       })

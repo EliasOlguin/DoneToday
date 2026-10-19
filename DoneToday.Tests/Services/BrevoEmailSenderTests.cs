@@ -1,4 +1,5 @@
 using System.Net;
+using Microsoft.AspNetCore.Http;
 using System.Text.Json;
 using DoneToday.Api.Entities;
 using DoneToday.Api.Services.Email;
@@ -20,6 +21,31 @@ public class BrevoEmailSenderTests
         Assert.Equal("person@example.test", json.RootElement.GetProperty("to")[0].GetProperty("email").GetString());
         Assert.Contains("&amp;", json.RootElement.GetProperty("htmlContent").GetString());
         Assert.DoesNotContain("fake-test-key", handler.Body);
+    }
+
+    [Fact]
+    public async Task ReadsSelectedLanguagePerRequestIncludingResendsAndRecovery()
+    {
+        var handler = new CaptureHandler();
+        var context = new DefaultHttpContext();
+        var sender = new BrevoEmailSender(new HttpClient(handler),
+            Options.Create(new BrevoEmailOptions { ApiKey = "fake-test-key", FromAddress = "sender@example.test" }),
+            new HttpContextAccessor { HttpContext = context });
+        context.Request.Headers[EmailLanguage.Header] = "es";
+        await sender.SendConfirmationLinkAsync(new User(), "person@example.test", "https://example.test/confirm");
+        using (var json = JsonDocument.Parse(handler.Body!))
+        {
+            Assert.Contains("Confirma tu email", json.RootElement.GetProperty("subject").GetString());
+            Assert.Contains("lang=\"es\"", json.RootElement.GetProperty("htmlContent").GetString());
+        }
+        context.Request.Headers[EmailLanguage.Header] = "de-DE";
+        await sender.SendPasswordResetLinkAsync(new User(), "person@example.test", "https://example.test/reset");
+        using (var json = JsonDocument.Parse(handler.Body!))
+            Assert.Contains("Setze dein", json.RootElement.GetProperty("subject").GetString());
+        context.Request.Headers[EmailLanguage.Header] = "<script>";
+        await sender.SendConfirmationLinkAsync(new User(), "person@example.test", "https://example.test/confirm");
+        using (var json = JsonDocument.Parse(handler.Body!))
+            Assert.Equal("Confirm your DoneToday email", json.RootElement.GetProperty("subject").GetString());
     }
 
     [Fact]

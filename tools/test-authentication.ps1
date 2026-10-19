@@ -36,11 +36,12 @@ function New-TestUser {
     foreach ($part in ([uri]$link).Query.TrimStart('?').Split('&')) {
         $pair=$part.Split('=',2); $values[$pair[0]]=[uri]::UnescapeDataString($pair[1])
     }
+    $values.password = $testPassword
     $null = Request '/api/auth/confirm-email' 200 $session 'POST' $values
     $login = Request '/api/auth/login' 200 $session 'POST' $credentials
     $cookie = $login.Headers['Set-Cookie'] -join ';'
     if ($cookie -notmatch 'httponly' -or $cookie -notmatch 'secure' -or $cookie -notmatch 'samesite=lax') { throw 'Unsafe authentication cookie' }
-    if ($cookie -match 'expires=|max-age=') { throw 'Login unexpectedly created a persistent cookie' }
+    if ($cookie -notmatch 'expires=|max-age=') { throw 'Login did not create a persistent cookie' }
     $me = (Request '/api/auth/me' 200 $session).Content | ConvertFrom-Json
     return @{Session=$session;Credentials=$credentials;Id=$me.id}
 }

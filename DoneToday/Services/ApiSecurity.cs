@@ -14,6 +14,8 @@ public static class ApiSecurity
     public static IServiceCollection AddApiSecurity(this IServiceCollection services)
     {
         services.AddMemoryCache();
+        services.AddSingleton<EarlyRequestLimiter>();
+        services.AddSingleton<GuestRegistration>();
         services.AddSingleton<DoneToday.Api.Services.Email.RecipientEmailThrottle>();
         services.AddSingleton<ReverificationAttempts>();
         services.AddScoped<SensitiveActionVerifier>();
@@ -28,18 +30,14 @@ public static class ApiSecurity
                 await context.HttpContext.Response.WriteAsJsonAsync(new { code = "rateLimited" }, cancellation);
             };
             options.AddPolicy("authentication", context => Window("auth:" + Ip(context), 20));
-            options.GlobalLimiter = PartitionedRateLimiter.CreateChained(
-                PartitionedRateLimiter.Create<HttpContext, string>(context => !IsApi(context)
-                    ? RateLimitPartition.GetNoLimiter("public")
-                    : RateLimitPartition.GetConcurrencyLimiter("api", _ => new ConcurrencyLimiterOptions { PermitLimit = 32, QueueLimit = 0 })),
-                PartitionedRateLimiter.Create<HttpContext, string>(context => !IsApi(context)
-                    ? RateLimitPartition.GetNoLimiter("public") : Window("ip:" + Ip(context), 300)),
-                PartitionedRateLimiter.Create<HttpContext, string>(context =>
+            options.AddPolicy("guest", context => RateLimitPartition.GetFixedWindowLimiter("guest:" + Ip(context),
+                _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromHours(1), QueueLimit = 0, AutoReplenishment = true }));
+            options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
                 {
                     if (!IsApi(context) || context.User.Identity?.IsAuthenticated != true) return RateLimitPartition.GetNoLimiter("anonymous");
                     var read = HttpMethods.IsGet(context.Request.Method) || HttpMethods.IsHead(context.Request.Method);
                     return Window($"user:{context.User.FindFirstValue(ClaimTypes.NameIdentifier)}:{read}", read ? 180 : 60);
-                }));
+                });
         });
         return services;
     }

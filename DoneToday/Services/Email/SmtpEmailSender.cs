@@ -1,4 +1,3 @@
-using System.Net;
 using DoneToday.Api.Entities;
 using MailKit.Net.Smtp;
 using MailKit.Security;
@@ -8,18 +7,16 @@ using MimeKit;
 
 namespace DoneToday.Api.Services.Email;
 
-public class SmtpEmailSender(IOptions<EmailOptions> options, IHostEnvironment environment) : IEmailSender<User>
+public class SmtpEmailSender(IOptions<EmailOptions> options, IHostEnvironment environment, IHttpContextAccessor? request = null) : IEmailSender<User>
 {
     public Task SendConfirmationLinkAsync(User user, string email, string confirmationLink) =>
-        SendLinkAsync(email, AccountEmailTemplate.Confirmation(confirmationLink));
+        SendLinkAsync(email, AccountEmailTemplate.Confirmation(confirmationLink, EmailLanguage.FromRequest(request)));
 
     public Task SendPasswordResetLinkAsync(User user, string email, string resetLink) =>
-        SendLinkAsync(email, AccountEmailTemplate.PasswordReset(resetLink));
+        SendLinkAsync(email, AccountEmailTemplate.PasswordReset(resetLink, EmailLanguage.FromRequest(request)));
 
     public Task SendPasswordResetCodeAsync(User user, string email, string resetCode) =>
-        SendAsync(email, "Reset your DoneToday password",
-            $"Your password reset code is: {resetCode}",
-            $"<p>Your password reset code is: <strong>{WebUtility.HtmlEncode(resetCode)}</strong></p>");
+        SendLinkAsync(email, AccountEmailTemplate.PasswordResetCode(resetCode, EmailLanguage.FromRequest(request)));
 
     private Task SendLinkAsync(string email, AccountEmailTemplate.Content content) =>
         SendAsync(email, content.Subject, content.Text, content.Html);

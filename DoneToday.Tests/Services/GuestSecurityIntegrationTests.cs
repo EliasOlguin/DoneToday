@@ -1,0 +1,389 @@
+using System.Net;
+using System.Net.Http.Json;
+using System.Security.Claims;
+using System.Text.Json;
+using DoneToday.Api.Controllers;
+using DoneToday.Api.Data;
+using DoneToday.Api.Entities;
+using DoneToday.Api.Services;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Npgsql;
+
+namespace DoneToday.Tests.Services;
+
+// Opt in only against an explicitly configured, disposable loopback PostgreSQL server.
+public sealed class SecurityPostgresFactAttribute : FactAttribute
+{
+    public SecurityPostgresFactAttribute()
+    {
+        if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DONETODAY_SECURITY_TEST_CONNECTION")))
+            Skip = "Set DONETODAY_SECURITY_TEST_CONNECTION to a disposable loopback PostgreSQL server.";
+    }
+}
+
+public class GuestSecurityIntegrationTests
+{
+    private const string Password = "SecurityTestPassword123!";
+
+    [SecurityPostgresFact]
+    public async Task PendingConversionNeedsBothBrowserAndEmailAndKeepsOwnership()
+    {
+        await using var host = await TestHost.Start();
+        var owner = host.Browser();
+        await owner.Post("/api/auth/guest", new { }, 200);
+        var before = await owner.Me();
+        var originalCookie = owner.Cookie;
+        await owner.Post("/api/Habits", new { name = "Owned habit", daysOfWeek = new[] { 0, 1, 2, 3, 4, 5, 6 } }, 201);
+        var habit = (await owner.Get("/api/Habits", 200)).EnumerateArray().Single().GetProperty("id").GetInt32();
+        await owner.Post("/api/auth/guest/register", new { email = "owner@example.test", password = Password }, 200);
+        var pending = await owner.Me();
+        Assert.True(pending.GetProperty("isGuest").GetBoolean());
+        Assert.False(pending.GetProperty("hasPassword").GetBoolean());
+        Assert.NotEqual("owner@example.test", pending.GetProperty("email").GetString());
+        var proof = host.Mail.LastProof();
+        // Knowing the email token alone, even with a different valid guest, cannot take over data.
+        var other = host.Browser();
+        await other.Post("/api/auth/confirm-email", proof, 400);
+        await other.Post("/api/auth/guest", new { }, 200);
+        await other.Post("/api/auth/confirm-email", proof, 400);
+        await owner.Post("/api/auth/confirm-email", proof, 200);
+        var after = await owner.Me();
+        Assert.Equal(before.GetProperty("id").GetInt32(), after.GetProperty("id").GetInt32());
+        Assert.False(after.GetProperty("isGuest").GetBoolean());
+        Assert.True(after.GetProperty("hasPassword").GetBoolean());
+        await owner.Get($"/api/Habits/{habit}", 200);
+        await other.Get($"/api/Habits/{habit}", 404);
+        await owner.Post("/api/auth/confirm-email", proof, 400); // Single use.
+        await host.Browser(originalCookie).Get("/api/auth/me", 401); // Rotated on conversion.
+        await host.Browser().Post("/api/auth/login", new { email = "owner@example.test", password = Password }, 200);
+    }
+
+    [SecurityPostgresFact]
+    public async Task ConcurrentConfirmationIsSingleUse()
+    {
+        await using var host = await TestHost.Start();
+        var browser = host.Browser();
+        await browser.Post("/api/auth/guest", new { }, 200);
+        var id = (await browser.Me()).GetProperty("id").GetInt32();
+        await browser.Post("/api/auth/guest/register", new { email = "race@example.test", password = Password }, 200);
+        var proof = host.Mail.LastProof();
+        var first = host.Browser(browser.Cookie);
+        var second = host.Browser(browser.Cookie);
+        var replies = await Task.WhenAll(first.PostRaw("/api/auth/confirm-email", proof), second.PostRaw("/api/auth/confirm-email", proof));
+        try { Assert.Equal(new[] { 200, 400 }, replies.Select(r => (int)r.StatusCode).OrderBy(status => status)); }
+        finally { foreach (var reply in replies) reply.Dispose(); }
+        using var scope = host.App.Services.CreateScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        Assert.Equal(id, (await users.FindByEmailAsync("race@example.test"))!.Id);
+    }
+
+    [SecurityPostgresFact]
+    public async Task ExistingEmailHasSameResponseAndDeletionCannotResetRecipientBudget()
+    {
+        await using var host = await TestHost.Start();
+        await host.Seed("existing@example.test");
+        var guest = host.Browser();
+        await guest.Post("/api/auth/guest", new { }, 200);
+        var known = await guest.Post("/api/auth/guest/register", new { email = "existing@example.test", password = Password }, 200);
+        var unknown = await guest.Post("/api/auth/guest/register", new { email = "new@example.test", password = Password }, 200);
+        Assert.Equal(known, unknown);
+        Assert.Equal(2, host.Mail.Links.Count);
+        await guest.Post("/api/auth/guest/resend-confirmation", new { }, 429);
+        await guest.Post("/api/profile/guest/delete", new { confirm = true }, 204);
+        var recreated = host.Browser();
+        await recreated.Post("/api/auth/guest", new { }, 200);
+        await recreated.Post("/api/auth/guest/register", new { email = "new@example.test", password = Password }, 429);
+        Assert.Equal(2, host.Mail.Links.Count);
+    }
+
+    [SecurityPostgresFact]
+    public async Task LogoutRejectsCopiedCookieAndSlidingRenewalCannotPassNinetyDays()
+    {
+        await using var host = await TestHost.Start();
+        await host.Seed("session@example.test");
+        var browser = host.Browser();
+        await browser.Post("/api/auth/login", new { email = "session@example.test", password = Password }, 200);
+        var stolen = browser.Cookie;
+        await browser.Post("/api/auth/logout", new { }, 204);
+        await host.Browser(stolen).Get("/api/auth/me", 401);
+        await browser.Post("/api/auth/login", new { email = "session@example.test", password = Password }, 200);
+        for (var i = 0; i < 3; i++)
+        {
+            host.Clock.Now = host.Clock.Now.AddDays(29);
+            await browser.Get("/api/auth/me", 200);
+        }
+        host.Clock.Now = host.Clock.Now.AddDays(4);
+        await browser.Get("/api/auth/me", 401);
+    }
+
+    [SecurityPostgresFact]
+    public async Task GoogleConversionPreservesDataInvalidatesPendingProofAndChecksAccountState()
+    {
+        await using var host = await TestHost.Start();
+        var unconfirmed = await host.Seed("pending@example.test", false);
+        var local = host.Browser();
+        await local.Get($"/test/sign-in/{unconfirmed.Id}", 200);
+        var rejected = await local.PostForm("/api/auth/external/link-google", new Dictionary<string, string> { ["Password"] = Password }, 302);
+        Assert.Contains("externalError=verification", rejected.Headers.Location!.Query);
+        var stale = host.Browser();
+        await stale.Post("/api/auth/guest", new { }, 200);
+        var staleId = (await stale.Me()).GetProperty("id").GetInt32();
+        await stale.Post("/test/external", new { email = "stale@example.test", providerKey = "stale-proof" }, 200);
+        await stale.Post("/api/auth/logout", new { }, 204);
+        await stale.Get($"/test/sign-in/{staleId}", 200);
+        await stale.Get("/api/auth/external/callback", 302);
+        using (var state = host.App.Services.CreateScope())
+            Assert.Null(await state.ServiceProvider.GetRequiredService<UserManager<User>>().FindByLoginAsync("Google", "stale-proof"));
+        var owner = host.Browser();
+        await owner.Post("/api/auth/guest", new { }, 200);
+        var guest = await owner.Me();
+        var id = guest.GetProperty("id").GetInt32();
+        await owner.Post("/api/auth/guest/register", new { email = "email-path@example.test", password = Password }, 200);
+        var oldProof = host.Mail.LastProof();
+        await owner.Post("/test/external", new { email = "google-owner@example.test", providerKey = "verified-owner" }, 200);
+        await owner.Get("/api/auth/external/callback", 302);
+        var converted = await owner.Me();
+        Assert.Equal(id, converted.GetProperty("id").GetInt32());
+        Assert.Equal("google-owner@example.test", converted.GetProperty("email").GetString());
+        Assert.False(converted.GetProperty("isGuest").GetBoolean());
+        await owner.Post("/api/auth/confirm-email", oldProof, 400);
+        using var scope = host.App.Services.CreateScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        Assert.Equal(id, (await users.FindByLoginAsync("Google", "verified-owner"))!.Id);
+    }
+
+    [SecurityPostgresFact]
+    public async Task NormalConfirmationRequiresChosenPasswordAndRevokesExistingSessions()
+    {
+        await using var host = await TestHost.Start();
+        var browser = host.Browser();
+        await browser.Post("/api/auth/register", new { email = "normal@example.test", password = Password }, 200);
+        var proof = host.Mail.LastProof();
+        await browser.Post("/api/auth/confirm-email", proof, 400);
+        proof["password"] = "WrongPassword123!";
+        await browser.Post("/api/auth/confirm-email", proof, 400);
+        proof["password"] = Password;
+        await browser.Get($"/test/sign-in/{proof["userId"]}", 200);
+        var previous = browser.Cookie;
+        await browser.Post("/api/auth/confirm-email", proof, 200);
+        await host.Browser(previous).Get("/api/auth/me", 401);
+        await browser.Post("/api/auth/login", new { email = "normal@example.test", password = Password }, 200);
+    }
+
+    [SecurityPostgresFact]
+    public async Task GuestCreationHasAnHourlyLimitAndGlobalStorageCeiling()
+    {
+        await using (var hourly = await TestHost.Start())
+        {
+            for (var i = 0; i < 5; i++) await hourly.Browser().Post("/api/auth/guest", new { }, 200);
+            await hourly.Browser().Post("/api/auth/guest", new { }, 429);
+        }
+        await using var capacity = await TestHost.Start();
+        using var scope = capacity.App.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.Users.AddRange(Enumerable.Range(0, GuestLifecycle.MaximumAccounts).Select(i => new User {
+            UserName = "guest-cap" + i, Email = "cap" + i + "@guest.invalid", CreatedAt = capacity.Clock.Now
+        }));
+        await db.SaveChangesAsync();
+        await capacity.Browser().Post("/api/auth/guest", new { }, 429);
+        Assert.Equal(GuestLifecycle.MaximumAccounts, await GuestLifecycle.Unlinked(db.Users).CountAsync());
+    }
+
+    [SecurityPostgresFact]
+    public async Task GuestDeletionCascadesAndRetentionExcludesConvertedAccounts()
+    {
+        await using var host = await TestHost.Start();
+        var guest = host.Browser();
+        await guest.Post("/api/auth/guest", new { }, 200);
+        await guest.Post("/api/Habits", new { name = "Delete with guest", daysOfWeek = new[] { 1 } }, 201);
+        await guest.Post("/api/profile/guest/delete", new { confirm = false }, 400);
+        var cookie = guest.Cookie;
+        await guest.Post("/api/profile/guest/delete", new { confirm = true }, 204);
+        await host.Browser(cookie).Get("/api/auth/me", 401);
+        using var scope = host.App.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        Assert.Empty(await db.Habits.ToListAsync());
+        var expired = new User { UserName = "guest-old", Email = "old@guest.invalid", CreatedAt = host.Clock.Now.AddDays(-121) };
+        var recent = new User { UserName = "guest-recent", Email = "recent@guest.invalid", CreatedAt = host.Clock.Now.AddDays(-119) };
+        db.Users.AddRange(expired, recent);
+        await db.SaveChangesAsync();
+        var converted = await host.Seed("converted@example.test");
+        await db.Users.Where(u => u.Id == converted.Id).ExecuteUpdateAsync(s => s.SetProperty(u => u.CreatedAt, host.Clock.Now.AddDays(-121)));
+        var removed = await GuestLifecycle.RemoveExpiredAsync(db, host.Clock.Now);
+        Assert.Equal(1, removed);
+        Assert.False(await db.Users.AnyAsync(u => u.Id == expired.Id));
+        Assert.True(await db.Users.AnyAsync(u => u.Id == recent.Id));
+        Assert.True(await db.Users.AnyAsync(u => u.Id == converted.Id));
+        var registered = host.Browser();
+        await registered.Post("/api/auth/login", new { email = "converted@example.test", password = Password }, 200);
+        await registered.Post("/api/profile/guest/delete", new { confirm = true }, 400);
+    }
+
+    private sealed class TestClock : TimeProvider
+    {
+        public DateTimeOffset Now = DateTimeOffset.UtcNow;
+        public override DateTimeOffset GetUtcNow() => Now;
+    }
+    private sealed class CaptureMail : IEmailSender<User>
+    {
+        public List<string> Links { get; } = [];
+        public Task SendConfirmationLinkAsync(User user, string email, string link) { Links.Add(link); return Task.CompletedTask; }
+        public Task SendPasswordResetLinkAsync(User user, string email, string link) { Links.Add(link); return Task.CompletedTask; }
+        public Task SendPasswordResetCodeAsync(User user, string email, string code) => throw new NotSupportedException();
+        public Dictionary<string, string> LastProof()
+        {
+            var query = QueryHelpers.ParseQuery(new Uri(Links.Last()).Query);
+            return new() { ["userId"] = query["userId"].ToString(), ["code"] = query["code"].ToString() };
+        }
+    }
+    private sealed class Browser(TestHost host, string? initialCookie = null)
+    {
+        private readonly CookieContainer cookies = new();
+        private readonly Uri cookieOrigin = new("https://localhost/api/auth/");
+        private readonly HttpClient client = new(new HttpClientHandler { UseCookies = false, AllowAutoRedirect = false }) { BaseAddress = new Uri(host.App.Urls.Single()) };
+        public string Cookie => string.IsNullOrEmpty(initialCookie) ? cookies.GetCookieHeader(cookieOrigin) : initialCookie;
+        private async Task<HttpResponseMessage> Send(HttpRequestMessage request, int expected)
+        {
+            if (!string.IsNullOrEmpty(Cookie)) request.Headers.Add("Cookie", Cookie);
+            var response = await client.SendAsync(request);
+            if (response.Headers.TryGetValues("Set-Cookie", out var headers))
+                foreach (var header in headers) cookies.SetCookies(cookieOrigin, header);
+            Assert.True(expected == 0 || (int)response.StatusCode == expected, $"{request.Method} {request.RequestUri} expected {expected}, got {(int)response.StatusCode}: {await response.Content.ReadAsStringAsync()}");
+            return response;
+        }
+        public async Task<JsonElement> Get(string path, int expected)
+        {
+            using var response = await Send(new HttpRequestMessage(HttpMethod.Get, path), expected);
+            var body = await response.Content.ReadAsStringAsync();
+            return string.IsNullOrEmpty(body) || expected != 200 ? default : JsonSerializer.Deserialize<JsonElement>(body);
+        }
+        public Task<JsonElement> Me() => Get("/api/auth/me", 200);
+        public async Task<string> Post(string path, object body, int expected)
+        {
+            var csrf = await Get("/api/auth/csrf", 200);
+            using var request = new HttpRequestMessage(HttpMethod.Post, path) { Content = JsonContent.Create(body) };
+            request.Headers.Add("X-CSRF-TOKEN", csrf.GetProperty("token").GetString());
+            using var response = await Send(request, expected);
+            return await response.Content.ReadAsStringAsync();
+        }
+        public async Task<HttpResponseMessage> PostRaw(string path, object body)
+        {
+            var csrf = await Get("/api/auth/csrf", 200);
+            using var request = new HttpRequestMessage(HttpMethod.Post, path) { Content = JsonContent.Create(body) };
+            request.Headers.Add("X-CSRF-TOKEN", csrf.GetProperty("token").GetString());
+            return await Send(request, 0);
+        }
+        public async Task<HttpResponseMessage> PostForm(string path, Dictionary<string, string> body, int expected)
+        {
+            var csrf = await Get("/api/auth/csrf", 200);
+            using var request = new HttpRequestMessage(HttpMethod.Post, path) { Content = new FormUrlEncodedContent(body) };
+            request.Headers.Add("X-CSRF-TOKEN", csrf.GetProperty("token").GetString());
+            return await Send(request, expected);
+        }
+    }
+    private sealed class TestHost : IAsyncDisposable
+    {
+        public WebApplication App { get; private set; } = null!;
+        public TestClock Clock { get; } = new();
+        public CaptureMail Mail { get; } = new();
+        private string adminConnection = "";
+        private string databaseName = "";
+        private string connection = "";
+        public Browser Browser(string? cookie = null) => new(this, cookie);
+        public async Task<User> Seed(string email, bool confirmed = true)
+        {
+            using var scope = App.Services.CreateScope();
+            var users = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+            var user = new User { UserName = email, Email = email, EmailConfirmed = confirmed };
+            Assert.True((await users.CreateAsync(user, Password)).Succeeded);
+            return user;
+        }
+        public static async Task<TestHost> Start()
+        {
+            var host = new TestHost();
+            var settings = new NpgsqlConnectionStringBuilder(Environment.GetEnvironmentVariable("DONETODAY_SECURITY_TEST_CONNECTION"));
+            if (settings.Host is not ("127.0.0.1" or "localhost") || settings.Database != "postgres")
+                throw new InvalidOperationException("Security integration tests require an explicit loopback postgres admin connection.");
+            host.adminConnection = settings.ConnectionString;
+            host.databaseName = "donetoday_security_" + Guid.NewGuid().ToString("N");
+            await using (var admin = new NpgsqlConnection(host.adminConnection))
+            {
+                await admin.OpenAsync();
+                await using var create = new NpgsqlCommand($"CREATE DATABASE \"{host.databaseName}\"", admin);
+                await create.ExecuteNonQueryAsync();
+            }
+            settings.Database = host.databaseName;
+            host.connection = settings.ConnectionString;
+            var builder = WebApplication.CreateBuilder(new WebApplicationOptions { EnvironmentName = Environments.Development });
+            builder.Logging.ClearProviders();
+            builder.WebHost.UseUrls("http://127.0.0.1:0");
+            builder.Services.AddSingleton<TimeProvider>(host.Clock);
+            builder.Services.AddControllers().AddApplicationPart(typeof(AuthController).Assembly);
+            builder.Services.AddDbContext<AppDbContext>(o => o.UseNpgsql(host.connection));
+            builder.Services.AddDoneTodayIdentity();
+            builder.Services.Configure<CookieAuthenticationOptions>(IdentityConstants.ApplicationScheme, o => o.TimeProvider = host.Clock);
+            builder.Services.Configure<SecurityStampValidatorOptions>(o => o.TimeProvider = host.Clock);
+            builder.Services.AddApiSecurity();
+            builder.Services.AddDataProtection().UseEphemeralDataProtectionProvider();
+            builder.Services.AddSingleton<IEmailSender<User>>(host.Mail);
+            builder.Services.AddScoped<UserDateService>();
+            builder.Services.AddScoped<StreakService>();
+            builder.Services.AddScoped<ProgressService>();
+            builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?> {
+                ["Authentication:FrontendUrl"] = "https://localhost:5173",
+                ["Authentication:Google:ClientId"] = "test-only", ["Authentication:Google:ClientSecret"] = "test-only"
+            });
+            builder.Services.AddDoneTodayGoogle(builder.Configuration);
+            host.App = builder.Build();
+            host.App.Use((ctx, next) => host.App.Services.GetRequiredService<EarlyRequestLimiter>().Invoke(ctx, next));
+            host.App.UseAuthentication();
+            host.App.UseRateLimiter();
+            host.App.UseAuthorization();
+            host.App.MapControllers();
+            host.App.MapGet("/test/sign-in/{id:int}", async (int id, UserManager<User> users, SignInManager<User> signIn) => {
+                await signIn.SignInAsync((await users.FindByIdAsync(id.ToString()))!, true);
+                return Results.Ok(new { });
+            });
+            host.App.MapPost("/test/external", async (ExternalProof request, HttpContext context, UserManager<User> users) => {
+                var user = (await users.GetUserAsync(context.User))!;
+                var properties = new AuthenticationProperties();
+                properties.Items["LoginProvider"] = "Google";
+                properties.Items["XsrfId"] = user.Id.ToString();
+                properties.Items["linkUserId"] = user.Id.ToString();
+                properties.Items["linkStamp"] = user.SecurityStamp;
+                await context.SignInAsync(IdentityConstants.ExternalScheme,
+                    new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, request.ProviderKey),
+                        new Claim(ClaimTypes.Email, request.Email), new Claim("google:email_verified", "true")], "Google")), properties);
+                return Results.Ok(new { });
+            });
+            using (var scope = host.App.Services.CreateScope())
+                await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.MigrateAsync();
+            await host.App.StartAsync();
+            return host;
+        }
+        public async ValueTask DisposeAsync()
+        {
+            if (App is not null) { await App.StopAsync(); await App.DisposeAsync(); }
+            if (!databaseName.StartsWith("donetoday_security_", StringComparison.Ordinal)) throw new InvalidOperationException("Unsafe test database name.");
+            await using var pool = new NpgsqlConnection(connection);
+            NpgsqlConnection.ClearPool(pool);
+            await using var admin = new NpgsqlConnection(adminConnection);
+            await admin.OpenAsync();
+            await using var drop = new NpgsqlCommand($"DROP DATABASE \"{databaseName}\" WITH (FORCE)", admin);
+            await drop.ExecuteNonQueryAsync();
+        }
+    }
+    private sealed record ExternalProof(string Email, string ProviderKey);
+}

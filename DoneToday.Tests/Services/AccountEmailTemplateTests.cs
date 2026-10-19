@@ -23,6 +23,35 @@ public class AccountEmailTemplateTests
         if (!confirmation) Assert.Contains("Your password will stay the same", result.Text);
     }
 
+    [Theory]
+    [InlineData("es", "Confirma tu email", "Restablece tu contraseña", "No lo compartas", "es")]
+    [InlineData("es-AR", "Confirma tu email", "Restablece tu contraseña", "No lo compartas", "es")]
+    [InlineData("de", "Bestätige", "Setze dein", "Teile ihn nicht", "de")]
+    [InlineData("de-DE", "Bestätige", "Setze dein", "Teile ihn nicht", "de")]
+    [InlineData("en", "Confirm your", "Reset your", "Do not share", "en")]
+    [InlineData("fr", "Confirm your", "Reset your", "Do not share", "en")]
+    [InlineData(null, "Confirm your", "Reset your", "Do not share", "en")]
+    public void LocalizesSubjectsHtmlAndPlainText(string? language, string confirmation, string reset, string privacy, string htmlLanguage)
+    {
+        const string link = "https://example.test/confirm?code=proof&userId=12";
+        var confirm = AccountEmailTemplate.Confirmation(link, language);
+        var recovery = AccountEmailTemplate.PasswordReset(link, language);
+        Assert.Contains(confirmation, confirm.Subject);
+        Assert.Contains(reset, recovery.Subject);
+        foreach (var content in new[] { confirm, recovery })
+        {
+            Assert.Contains($"<html lang=\"{htmlLanguage}\">", content.Html);
+            Assert.Contains(privacy, content.Html);
+            Assert.Contains(privacy, content.Text);
+            Assert.Contains(link, content.Text);
+            Assert.Contains("code=proof&amp;userId=12", content.Html);
+        }
+        var code = AccountEmailTemplate.PasswordResetCode("<test-code>", language);
+        Assert.Contains(reset, code.Subject);
+        Assert.Contains("&lt;test-code&gt;", code.Html);
+        Assert.DoesNotContain("<test-code>", code.Html);
+    }
+
     [Fact]
     public void EncodesAttributeAndVisibleLinkWithoutInjectingMarkup()
     {

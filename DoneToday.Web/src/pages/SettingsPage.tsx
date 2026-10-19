@@ -14,10 +14,13 @@ import { useNavigate } from 'react-router'
 import InstallApp from '../components/InstallApp'
 import TimeZoneSettings from '../components/TimeZoneSettings'
 import ProfileSettings from '../components/ProfileSettings'
+import GuestDeletion from '../components/GuestDeletion'
+import { useSession } from '../hooks/useSession'
 import { appVersion } from '../lib/version'
 
 export default function SettingsPage() {
   const { t } = useTranslation()
+  const session = useSession()
   const { theme, setTheme } = useContext(ThemeContext)
   const client = useQueryClient()
   const navigate = useNavigate()
@@ -49,6 +52,18 @@ export default function SettingsPage() {
         {t('nav.settings')}
       </h1>
       <p className="mt-2 text-sm text-muted">{t('settings.tagline')}</p>
+      {session.data?.isGuest && (
+        <div className="panel mt-4">
+          <h2 className="font-semibold">{t('guest.title')}</h2>
+          <p className="mt-2 text-sm text-muted">{t('guest.help')}</p>
+          <Link
+            className="mt-3 block text-primary underline"
+            to="/settings/connections"
+          >
+            {t('guest.save')}
+          </Link>
+        </div>
+      )}
       <InstallApp />
       <TimeZoneSettings />
       <ProfileSettings />
@@ -171,7 +186,11 @@ export default function SettingsPage() {
           </p>
         )}
       </section>
-      <ProfileSettings showDelete />
+      {session.data?.isGuest ? (
+        <GuestDeletion />
+      ) : (
+        <ProfileSettings showDelete />
+      )}
       <p className="mt-8 text-center text-xs text-muted">
         DoneToday · v{appVersion}
       </p>
@@ -181,7 +200,13 @@ export default function SettingsPage() {
           className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-danger/25 bg-danger/5 px-4 text-sm font-semibold text-danger transition-colors hover:bg-danger/10 disabled:opacity-50"
           aria-busy={logout.isPending}
           disabled={logout.isPending}
-          onClick={() => logout.mutate()}
+          onClick={() => {
+            if (
+              !session.data?.isGuest ||
+              window.confirm(t('guest.logoutWarning'))
+            )
+              logout.mutate()
+          }}
         >
           <Icon name="logout" />
           {t('auth.logout')}

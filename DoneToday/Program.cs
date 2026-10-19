@@ -36,6 +36,7 @@ builder.Services.AddScoped<StreakService>();
 builder.Services.AddScoped<ProgressService>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<UserDateService>();
+builder.Services.AddHostedService<GuestCleanup>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
@@ -67,6 +68,7 @@ if (!app.Environment.IsDevelopment()) app.UseHsts();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
+app.Use((context, next) => app.Services.GetRequiredService<EarlyRequestLimiter>().Invoke(context, next));
 app.UseAuthentication();
 app.UseRateLimiter();
 app.UseAuthorization();

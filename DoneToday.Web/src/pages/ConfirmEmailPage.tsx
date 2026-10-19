@@ -1,7 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router'
-import { useMutation } from '@tanstack/react-query'
-import { authPost } from '../api/auth'
+import { useState } from 'react'
+import PasswordField from '../components/PasswordField'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { authPost, getSession } from '../api/auth'
 import Icon from '../components/ui/Icon'
 
 export default function ConfirmEmailPage() {
@@ -9,8 +11,16 @@ export default function ConfirmEmailPage() {
   const [params] = useSearchParams()
   const userId = params.get('userId')
   const code = params.get('code')
+  const guest = params.get('guest') === '1'
+  const [password, setPassword] = useState('')
+  const client = useQueryClient()
   const confirm = useMutation({
-    mutationFn: () => authPost('confirm-email', { userId, code }),
+    mutationFn: () => authPost('confirm-email', { userId, code, password }),
+    onSuccess: async () => {
+      setPassword('')
+      client.setQueryData(['session'], await getSession())
+      await client.invalidateQueries({ queryKey: ['external-connections'] })
+    },
   })
   const invalid = !userId || !code || confirm.error?.message === 'invalid'
   return (
@@ -40,18 +50,18 @@ export default function ConfirmEmailPage() {
             </p>
             <Link
               className="btn-primary mt-6 flex min-h-11 items-center justify-center text-sm"
-              to="/login"
+              to={guest ? '/today' : '/login'}
             >
-              {t('auth.login')}
+              {t(guest ? 'nav.today' : 'auth.login')}
             </Link>
           </div>
         ) : invalid ? (
           <div>
             <p role="alert" className="text-sm leading-relaxed text-muted">
-              {t('auth.confirmError')}
+              {t(guest ? 'guest.confirmError' : 'auth.confirmError')}
             </p>
             <Link
-              to="/login?confirm=1"
+              to={guest ? '/settings/connections' : '/login?confirm=1'}
               className="btn-primary mt-6 flex min-h-11 items-center justify-center text-sm"
             >
               {t('auth.requestNewLink')}
@@ -60,12 +70,22 @@ export default function ConfirmEmailPage() {
         ) : (
           <>
             <p className="mb-6 text-sm leading-relaxed text-muted">
-              {t('auth.confirmIntro')}
+              {t(guest ? 'guest.confirmHelp' : 'guest.normalConfirmHelp')}
             </p>
+            {!guest && (
+              <PasswordField
+                label={t('auth.password')}
+                autoComplete="current-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+                maxLength={128}
+              />
+            )}
             <button
-              className="btn-primary w-full text-sm"
+              className="btn-primary mt-4 w-full text-sm"
               aria-busy={confirm.isPending}
-              disabled={confirm.isPending}
+              disabled={confirm.isPending || (!guest && !password)}
               onClick={() => confirm.mutate()}
             >
               {confirm.isPending ? t('common.saving') : t('auth.confirm')}

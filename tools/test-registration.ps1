@@ -29,6 +29,7 @@ foreach ($part in ([uri]$link).Query.TrimStart('?').Split('&')) {
 }
 $invalidBody = @{userId=$queryValues.userId;code='invalid'} | ConvertTo-Json
 $invalid = Invoke-WebRequest "$ApiUrl/api/auth/confirm-email" -Method Post -ContentType 'application/json' -Body $invalidBody -WebSession $authSession -Headers $headers -SkipCertificateCheck -SkipHttpErrorCheck
+$queryValues.password = 'ExampleStrong!123'
 $confirmed = Invoke-WebRequest "$ApiUrl/api/auth/confirm-email" -Method Post -ContentType 'application/json' -Body ($queryValues | ConvertTo-Json) -WebSession $authSession -Headers $headers -SkipCertificateCheck -SkipHttpErrorCheck
 if ($registered.StatusCode -ne 200 -or $confirmed.StatusCode -ne 200 -or $invalid.StatusCode -ne 400 -or $missingCsrf.StatusCode -ne 400 -or $weak.StatusCode -ne 400) { throw 'Registration smoke test failed' }
 Write-Output 'PASS: registration, Mailpit delivery, confirmation, invalid token rejection, password policy and CSRF rejection.'

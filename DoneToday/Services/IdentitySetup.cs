@@ -22,6 +22,7 @@ public static class IdentitySetup
 
     public static IServiceCollection AddDoneTodayIdentity(this IServiceCollection services)
     {
+        services.AddHttpContextAccessor();
         services.AddIdentityCore<User>(Configure)
             .AddRoles<IdentityRole<int>>()
             .AddEntityFrameworkStores<AppDbContext>()
@@ -41,8 +42,10 @@ public static class IdentitySetup
             options.Cookie.HttpOnly = true;
             options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
             options.Cookie.SameSite = SameSiteMode.Lax;
-            options.ExpireTimeSpan = TimeSpan.FromHours(8);
+            options.ExpireTimeSpan = TimeSpan.FromDays(30);
             options.SlidingExpiration = true;
+            options.Events.OnSigningIn = SessionSecurity.SigningIn;
+            options.Events.OnValidatePrincipal = SessionSecurity.Validate;
             options.Events.OnRedirectToLogin = context =>
             {
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;

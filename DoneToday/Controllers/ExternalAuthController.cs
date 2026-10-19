@@ -31,7 +31,7 @@ public class ExternalAuthController(UserManager<User> users, SignInManager<User>
         var user = await users.GetUserAsync(User);
         if (user is null) return Unauthorized();
         return Ok(new { google = (await users.GetLoginsAsync(user)).Any(login => login.LoginProvider == "Google"),
-            hasPassword = await users.HasPasswordAsync(user), twoFactor = user.TwoFactorEnabled });
+            user.IsGuest, hasPassword = await users.HasPasswordAsync(user), twoFactor = user.TwoFactorEnabled });
     }
 
     [HttpPost("google")]
@@ -53,13 +53,16 @@ public class ExternalAuthController(UserManager<User> users, SignInManager<User>
         if (!await GoogleEnabled()) return NotFound();
         var user = await users.GetUserAsync(User);
         if (user is null) return Unauthorized();
-        if (!await verification.Password(user, request.Password) || (user.TwoFactorEnabled &&
-            !await verification.Code(user, request.Code)))
+        if (!user.IsGuest && !user.EmailConfirmed) return Back("/settings/connections", "verification");
+        if (!user.IsGuest && (!await verification.Password(user, request.Password) || (user.TwoFactorEnabled &&
+            !await verification.Code(user, request.Code))))
             return Back("/settings/connections", "verification");
         await verification.Complete(user);
         await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
         var properties = signIn.ConfigureExternalAuthenticationProperties("Google", "/api/auth/external/callback", user.Id.ToString());
         properties.Items["linkUserId"] = user.Id.ToString();
+        properties.Items["linkStamp"] = user.SecurityStamp;
+        properties.ExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(5);
         return Challenge(properties, "Google");
     }
 
@@ -109,17 +112,34 @@ public class ExternalAuthController(UserManager<User> users, SignInManager<User>
             {
                 var user = await users.GetUserAsync(User);
                 if (user is null || user.Id.ToString() != linkUserId) return Back("/login", "failed");
+                if (!ticket.Properties!.Items.TryGetValue("linkStamp", out var stamp) || stamp != user.SecurityStamp ||
+                    (!user.IsGuest && !user.EmailConfirmed)) return Back("/settings/connections", "verification");
+                await using var linkTransaction = await database.Database.BeginTransactionAsync();
+                await database.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(71356, {user.Id})");
+                await database.Entry(user).ReloadAsync();
+                if (stamp != user.SecurityStamp || (!user.IsGuest && !user.EmailConfirmed)) return Back("/settings/connections", "verification");
+                if (user.IsGuest)
+                {
+                    var linkedEmail = info.Principal.FindFirstValue(ClaimTypes.Email)!;
+                    if (await users.FindByEmailAsync(linkedEmail) is not null) return Back("/settings/connections", "linkFailed");
+                    user.Email = linkedEmail;
+                    user.UserName = linkedEmail;
+                    user.EmailConfirmed = true;
+                    if (!(await users.UpdateAsync(user)).Succeeded) return Back("/settings/connections", "linkFailed");
+                }
                 var result = await users.AddLoginAsync(user, info);
                 if (!result.Succeeded) return Back("/settings/connections", "linkFailed");
-                await users.UpdateSecurityStampAsync(user);
-                await signIn.RefreshSignInAsync(user);
+                if (!(await users.UpdateSecurityStampAsync(user)).Succeeded) return Back("/settings/connections", "linkFailed");
+                await linkTransaction.CommitAsync();
+                GuestRegistration.Clear(HttpContext);
+                await signIn.SignInAsync(user, isPersistent: true, authenticationMethod: info.LoginProvider);
                 return Back("/settings/connections");
             }
             var existing = await users.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
             if (existing is not null)
             {
                 var result = await signIn.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey,
-                    isPersistent: false, bypassTwoFactor: false);
+                    isPersistent: true, bypassTwoFactor: false);
                 if (result.RequiresTwoFactor)
                 {
                     await HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
@@ -134,7 +154,7 @@ public class ExternalAuthController(UserManager<User> users, SignInManager<User>
             if (!(await users.CreateAsync(newUser)).Succeeded) return Back("/login", "failed");
             if (!(await users.AddLoginAsync(newUser, info)).Succeeded) return Back("/login", "failed");
             await transaction.CommitAsync();
-            await signIn.SignInAsync(newUser, isPersistent: false, authenticationMethod: info.LoginProvider);
+            await signIn.SignInAsync(newUser, isPersistent: true, authenticationMethod: info.LoginProvider);
             return Back("/today");
         }
         catch (DbUpdateException) { return Back("/login", "failed"); }
@@ -147,4 +167,4 @@ public class ExternalAuthController(UserManager<User> users, SignInManager<User>
         Redirect(new Uri(GoogleAuthentication.Frontend(configuration),
             path + (error is null ? "" : "?externalError=" + Uri.EscapeDataString(error))).AbsoluteUri);
 }
-public record ExternalLinkRequest([Required, MaxLength(128)] string Password, [MaxLength(100)] string? Code);
+public record ExternalLinkRequest([MaxLength(128)] string? Password, [MaxLength(100)] string? Code);

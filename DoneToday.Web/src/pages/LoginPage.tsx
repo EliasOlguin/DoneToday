@@ -50,6 +50,20 @@ export default function LoginPage() {
       )
     },
   })
+  const guest = useMutation({
+    mutationFn: async () => {
+      await authPost('guest')
+      const session = await getSession()
+      if (!session) throw new Error('request')
+      return session
+    },
+    onSuccess: async (session) => {
+      await client.cancelQueries()
+      client.clear()
+      client.setQueryData(['session'], session)
+      navigate('/today', { replace: true })
+    },
+  })
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (login.isPending) return
@@ -162,6 +176,23 @@ export default function LoginPage() {
         </button>
       </form>
       {!twoFactor && <GoogleButton separator />}
+      {!twoFactor && (
+        <div className="mt-4">
+          <button
+            type="button"
+            className="btn-primary w-full"
+            disabled={guest.isPending || login.isPending}
+            onClick={() => guest.mutate()}
+          >
+            {t('guest.continue')}
+          </button>
+          {guest.isError && (
+            <p role="alert" className="mt-2 text-danger">
+              {t('errors.network')}
+            </p>
+          )}
+        </div>
+      )}
       {twoFactor && (
         <button
           type="button"

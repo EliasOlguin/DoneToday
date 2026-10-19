@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router'
 import { apiFetch } from '../api/client'
+import GuestRegistration from '../components/GuestRegistration'
 import GoogleButton from '../components/GoogleButton'
 
 export default function ConnectionsPage() {
@@ -13,6 +14,7 @@ export default function ConnectionsPage() {
       const response = await apiFetch('/api/auth/external/connections')
       if (!response.ok) throw new Error('request')
       return response.json() as Promise<{
+        isGuest: boolean
         google: boolean
         hasPassword: boolean
         twoFactor: boolean
@@ -25,7 +27,10 @@ export default function ConnectionsPage() {
         {t('nav.settings')}
       </Link>
       <h1 className="page-title mt-4">{t('google.connections')}</h1>
-      <p className="mt-2 text-sm text-muted">{t('google.linkHelp')}</p>
+      <p className="mt-2 text-sm text-muted">
+        {t(connections.data?.isGuest ? 'guest.help' : 'google.linkHelp')}
+      </p>
+      <GuestRegistration />
       {params.has('externalError') && (
         <p role="alert" className="mt-4 text-danger">
           {t('google.linkFailed')}
@@ -40,6 +45,8 @@ export default function ConnectionsPage() {
           <p role="status" className="text-success">
             {t('google.linked')}
           </p>
+        ) : connections.data.isGuest ? (
+          <GoogleButton link />
         ) : connections.data.hasPassword ? (
           <GoogleButton link>
             <label className="block">
