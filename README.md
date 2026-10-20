@@ -10,17 +10,19 @@ A habit tracker for people who want to build routines, record daily progress, an
 
 ### Today: scheduled habits, streaks, and weekly progress
 
-![Today view with three scheduled habits and a consistent weekly summary of 6 out of 9 completions](docs/images/today-en.webp)
+![Today view with three scheduled habits and a consistent weekly summary of 7 out of 9 completions](docs/images/today-en.webp)
 
 ### Statistics: daily completions, habit breakdown, and monthly calendar
 
-![Statistics view showing completed Monday and Tuesday, a pending Wednesday, and excluded future dates](docs/images/statistics-en.webp)
+![Statistics view with three weeks of varied history, 7 of 9 weekly completions, and 48 of 63 monthly completions](docs/images/statistics-en.webp)
 
-Screenshots use demo data with a shared reference date of October 14, 2026. The English interface is shown; Spanish and German are also available.
+Screenshots use one local demo account with three weeks of varied history and a shared reference date of October 21, 2026. The English interface is shown; Spanish and German are also available.
 
 ## Live demo
 
 [Open DoneToday](https://donetoday-15xl.onrender.com)
+
+Hosted on Render Free, which sleeps when idle; the first load may take around a minute.
 
 Use the guest option to explore without registering, or create an account with email confirmation. Google sign-in is available when provider credentials are configured.
 
@@ -170,3 +172,7 @@ Habit, profile, and progress routes require an authenticated account, including 
 | POST | `/api/profile/delete` | Verify and permanently delete the current account |
 
 More detail: [measurable habits](docs/measurable-habits.md), [UX behavior](docs/ux-improvements.md), [frontend guide](DoneToday.Web/README.md). Release history lives in [CHANGELOG.md](CHANGELOG.md).
+
+## License
+
+[MIT](LICENSE) — Copyright (c) 2026 Elias Joel Olguin.

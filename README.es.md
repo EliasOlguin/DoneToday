@@ -10,17 +10,19 @@ Una aplicación de hábitos para quienes quieren crear rutinas, registrar sus av
 
 ### Hoy: hábitos programados, rachas y progreso semanal
 
-![Pantalla Hoy con tres hábitos programados y un resumen semanal coherente de 6 de 9 completados](docs/images/today.webp)
+![Pantalla Hoy con tres hábitos programados y un resumen semanal coherente de 7 de 9 completados](docs/images/today.webp)
 
 ### Estadísticas: completados diarios, desglose por hábito y calendario mensual
 
-![Estadísticas con lunes y martes completos, miércoles pendiente y fechas futuras excluidas](docs/images/statistics.webp)
+![Estadísticas con tres semanas de historial variado, 7 de 9 completados semanales y 48 de 63 mensuales](docs/images/statistics.webp)
 
-Las capturas usan datos de demo con una fecha de referencia común: 14 de octubre de 2026. Muestran la interfaz en español; también está disponible en inglés y alemán.
+Las capturas usan una sola cuenta de demo local con tres semanas de historial variado y una fecha de referencia común: 21 de octubre de 2026. Muestran la interfaz en español; también está disponible en inglés y alemán.
 
 ## Demo en vivo
 
 [Abrir DoneToday](https://donetoday-15xl.onrender.com)
+
+El hosting gratuito de Render se suspende por inactividad; la primera carga puede tardar alrededor de un minuto.
 
 Podés explorar con la opción de invitado sin registrarte o crear una cuenta con confirmación de email. El acceso con Google está disponible cuando se configuran las credenciales del proveedor.
 
@@ -170,3 +172,7 @@ Las rutas de hábitos, perfil y progreso requieren una cuenta autenticada, inclu
 | POST | `/api/profile/delete` | Verificar y eliminar permanentemente la cuenta actual |
 
 Más información: [hábitos con metas](docs/measurable-habits.md), [comportamiento de la interfaz](docs/ux-improvements.md), [guía del frontend](DoneToday.Web/README.md). El historial de versiones está en [CHANGELOG.md](CHANGELOG.md).
+
+## Licencia
+
+[MIT](LICENSE) — Copyright (c) 2026 Elias Joel Olguin.
