@@ -103,12 +103,16 @@ export default function TodayPage() {
       hourCycle: 'h23',
     }).format(now),
   )
-  const greeting =
+  const greetingKey =
     hour < 12
-      ? t('today.morning')
+      ? 'today.morning'
       : hour < 18
-        ? t('today.afternoon')
-        : t('today.evening')
+        ? 'today.afternoon'
+        : 'today.evening'
+  const displayName = session.data?.displayName?.trim()
+  const greeting = displayName
+    ? t(`${greetingKey}Named`, { name: displayName })
+    : t(greetingKey)
   const date = new Intl.DateTimeFormat(i18n.resolvedLanguage, {
     weekday: 'short',
     month: 'short',
@@ -125,30 +129,27 @@ export default function TodayPage() {
           day={localDay}
         />
       )}
-      <div className="flex items-center justify-between gap-6">
-        <div className="min-w-0">
-          <p className="text-sm text-muted">
-            {date}{' '}
-            <span className="text-xs">· {timeZone.replaceAll('_', ' ')}</span>
-          </p>
-          <h1 id="today-title" className="page-title mt-1 lg:text-5xl">
-            {greeting}
-          </h1>
-          {session.data?.displayName && (
-            <p className="mt-1 text-lg font-medium">
-              {session.data.displayName}
-            </p>
-          )}
-          <DailyMotivation now={now} timeZone={timeZone} />
+      <header className="rounded-2xl border border-primary/10 bg-linear-to-br from-primary/10 via-surface to-surface p-5 sm:p-6 lg:p-8">
+        <p className="mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
+          <time dateTime={localDay}>{date}</time>
+          <span>· {timeZone.replaceAll('_', ' ')}</span>
+        </p>
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
+          <div className="min-w-0 flex-1">
+            <h1 id="today-title" className="page-title break-words">
+              {greeting}
+            </h1>
+            <DailyMotivation now={now} timeZone={timeZone} />
+          </div>
+          <Link
+            to="/habits/new"
+            className="btn-primary inline-flex shrink-0 items-center justify-center gap-2 text-sm"
+          >
+            <Icon name="plus" />
+            {t('common.create')}
+          </Link>
         </div>
-        <Link
-          to="/habits/new"
-          className="btn-primary hidden shrink-0 items-center gap-2 text-sm lg:inline-flex"
-        >
-          <Icon name="plus" />
-          {t('common.create')}
-        </Link>
-      </div>
+      </header>
       <dl className="mt-9 hidden grid-cols-3 rounded-2xl border border-muted/10 bg-surface p-6 lg:grid">
         {metrics.map(({ label, icon, value }) => (
           <div

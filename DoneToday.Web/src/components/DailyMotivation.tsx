@@ -13,11 +13,11 @@ export default function DailyMotivation({
   const translated = i18n.resolvedLanguage !== 'en'
 
   return (
-    <figure className="mt-3 max-w-xl">
-      <blockquote className="text-sm leading-relaxed text-muted">
+    <figure className="mt-5 max-w-xl border-l-2 border-primary/60 pl-4">
+      <blockquote className="text-sm leading-relaxed text-foreground/85">
         <p>{t(textKey)}</p>
       </blockquote>
-      <figcaption className="mt-1 text-xs leading-relaxed text-muted">
+      <figcaption className="mt-2 text-xs leading-relaxed text-muted">
         {source ? (
           <>
             <a
