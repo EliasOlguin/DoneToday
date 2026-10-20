@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.3 — Unreleased / Sin publicar
+
+- Update Vite to 8.3.3 to fix the Windows development-server launch-editor vulnerability. / Actualiza Vite a 8.3.3 para corregir la vulnerabilidad de apertura del editor en el servidor de desarrollo de Windows.
+
+- Reclaim empty guest slots at capacity and clean up empty guests after 24 hours while retaining guests with habits for 120 days. / Recupera plazas de invitados vacíos al alcanzar capacidad y los limpia tras 24 horas, conservando 120 días a quienes tienen hábitos.
+- Share a configurable daily email send budget across registration, confirmation resends and recovery, and limit registration to five requests per hour per IP. / Comparte un presupuesto diario configurable de correo entre registro, reenvíos y recuperación, y limita el registro a cinco peticiones por hora por IP.
+- Allow verified Google sign-up to replace an unconfirmed local account without external logins atomically; expire unconfirmed local accounts without data after 48 hours. / Permite reemplazar atómicamente con Google verificado una cuenta local no confirmada sin vínculos externos; elimina cuentas locales pendientes sin datos tras 48 horas.
+- Validate sign-up passwords before checking whether an email exists, keeping weak-password responses uniform. / Valida la contraseña antes de consultar si existe el email y mantiene respuestas uniformes para contraseñas débiles.
+
 ## 1.2.2 — 2026-10-18
 
 - Unify confirmation and password-reset emails with a responsive DoneToday design, violet action buttons, copyable fallback links and plain-text alternatives. / Unifica correos de confirmación y recuperación con diseño adaptable, botones violeta, enlaces alternativos y versión de texto.

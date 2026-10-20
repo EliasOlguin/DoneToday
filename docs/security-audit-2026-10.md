@@ -2,22 +2,24 @@
 
 Read-only review of the code at `f96d9a8` (main, clean tree) and of the public responses from https://donetoday-15xl.onrender.com. No code, settings or data were changed. No accounts were created and nobody signed in on production. It follows the [2026-10-19 audit](security-audit-2026-10-19.md) and its [remediation](security-remediation-2026-10-19.md). The guest-conversion, logout and early-limiter fixes from that round were re-read and still hold.
 
-**Summary:** no finding exposes another user's data or takes over an account. The real risks are **availability and abuse of the public demo**. A single attacker can make "Continue as guest" unusable, use up the email budget, or block a specific person (for example a recruiter) from ever signing up with their address. These matter because the portfolio sends reviewers to this demo.
+**Original audit summary:** no finding exposes another user's data or takes over an account. The real risks were **availability and abuse of the public demo**. A single attacker can make "Continue as guest" unusable, use up the email budget, or block a specific person (for example a recruiter) from ever signing up with their address. These matter because the portfolio sends reviewers to this demo.
 
-| # | Severity | Finding |
-|---|---|---|
-| 1 | Medium | One IP can fill guest capacity and keep the guest demo closed |
-| 2 | Medium | Sign-up sends unlimited emails to different recipients and can drain the email provider quota |
-| 3 | Medium | Unconfirmed sign-ups permanently squat an email address, including blocking Google sign-up |
-| 4 | Low | Sign-up reveals whether an email has an account (password-check order) |
-| 5 | Low | TOTP secrets and recovery codes are stored in plain text |
-| 6 | Low | Anyone who knows an email can lock that account out for 15 minutes, again and again |
-| 7 | Info | Trust in the forwarded client IP has not been verified on Render |
-| 8 | Info | The runtime database role also runs migrations |
+| # | Severity | Finding | Follow-up status |
+|---|---|---|---|
+| 1 | Medium | One IP can fill guest capacity and keep the guest demo closed | Fixed locally, 2026-10-20 |
+| 2 | Medium | Sign-up sends unlimited emails to different recipients and can drain the email provider quota | Fixed locally, 2026-10-20 |
+| 3 | Medium | Unconfirmed sign-ups permanently squat an email address, including blocking Google sign-up | Fixed locally, 2026-10-20 |
+| 4 | Low | Sign-up reveals whether an email has an account (password-check order) | Fixed locally, 2026-10-20 |
+| 5 | Low | TOTP secrets and recovery codes are stored in plain text | Open — deferred |
+| 6 | Low | Anyone who knows an email can lock that account out for 15 minutes, again and again | Open — deferred |
+| 7 | Info | Trust in the forwarded client IP has not been verified on Render | Open — deferred |
+| 8 | Info | The runtime database role also runs migrations | Open — deferred |
 
 ---
 
 ## 1. [Medium] One IP can fill guest capacity and keep the guest demo closed
+
+**Fixed locally (2026-10-20):** `GuestLifecycle` removes empty unlinked guests after 24 hours and keeps the 120-day retention for guests with habits. At capacity, creation conditionally deletes the oldest empty unlinked guest in the same advisory-locked transaction; it returns `429 guestCapacity` only when no eligible guest can be removed. Linked accounts and accounts with habits are excluded from eviction. PostgreSQL HTTP tests cover hourly limits, oldest-first replacement, the all-guests-have-data rejection, and retention boundaries.
 
 **Where:** `DoneToday/Controllers/AuthController.cs:39-40` (global cap check), `DoneToday/Services/ApiSecurity.cs:33` (5 guests/hour per IP), `DoneToday/Services/GuestLifecycle.cs:8,11` (cap 5,000; retention 120 days). The guest button is at `DoneToday.Web/src/pages/LoginPage.tsx:184-187`.
 
@@ -32,6 +34,8 @@ Read-only review of the code at `f96d9a8` (main, clean tree) and of the public r
 
 ## 2. [Medium] Sign-up sends unlimited emails to different recipients and can drain the email provider quota
 
+**Fixed locally (2026-10-20):** the singleton `DailyEmailBudget` atomically reserves at most `Email:DailyBudget` send attempts per UTC calendar day (default 250; 0 disables sending). All confirmation and password-recovery send paths use it, including guest registration/resend. Exhaustion skips delivery, preserves the generic HTTP response, and logs once per UTC day without identifying recipients. Failed send attempts also consume their reservation. Registration now has an independent 5/hour per-IP policy. The existing per-recipient limits remain. This budget is in memory: restarts reset it and multiple instances would not share it; it is not a durable provider quota or CAPTCHA.
+
 **Where:** `DoneToday/Controllers/AuthController.cs:194-209` (`Register`), the email failure handling at `:284-295`, and `DoneToday/Services/ApiSecurity.cs:32` (20 auth requests/minute per IP). `RecipientEmailThrottle` is keyed per recipient (`Services/Email/RecipientEmailThrottle.cs:410-411`), so it does not limit a run over many different addresses.
 
 **Exploit:** a script registers `random1@…`, `random2@…` and so on, or a list of real people's addresses, at 20 per minute from one IP. Each request creates an unconfirmed user and sends a confirmation email through Brevo, which is up to 1,200 emails an hour from one machine. On a small Brevo plan (the free tier allows 300/day), the daily quota is gone in about 15 minutes. After that, real confirmation and password-reset emails fail. They fail silently, because delivery errors return `200` on purpose (`:290-292`, `:101-107`). Mail sent to real people who never signed up can also get the Brevo sender flagged or suspended. `forgot-password` and `resend-confirmation` share the same pattern, but they only email existing accounts.
@@ -44,6 +48,8 @@ Read-only review of the code at `f96d9a8` (main, clean tree) and of the public r
 - If abuse actually happens, add a CAPTCHA such as Cloudflare Turnstile on sign-up. That needs a CSP change for its script and frame.
 
 ## 3. [Medium] Unconfirmed sign-ups permanently squat an email address, including blocking Google sign-up
+
+**Fixed locally (2026-10-20):** after Google email verification, sign-up may replace only a non-guest, unconfirmed local account with no external logins. Deletion and creation occur in one transaction, using the existing per-account advisory lock and a state reload before replacement. Confirmed, guest, and externally linked accounts still return `existingAccount`; no data or identity is merged. Failure to create the replacement rolls back deletion. Cleanup also removes unconfirmed non-guest local accounts older than 48 hours, excluding linked accounts and unexpected accounts with habits to preserve existing data. Normal email confirmation still requires the password chosen at registration.
 
 **Where:**
 - `AuthController.cs:200`: registering an existing email returns `200` silently and sends no email.
@@ -69,6 +75,8 @@ The owner can never use their own address. Combined with #2, an attacker can pre
 These two changes keep the 2026-10-19 protection, where a click alone never activates a password chosen by someone else.
 
 ## 4. [Low] Sign-up reveals whether an email has an account (password-check order)
+
+**Fixed locally (2026-10-20):** normal registration runs every password validator before looking up the recipient, matching guest registration. Existing and new emails receive the same validation codes for weak passwords and the same generic response for valid passwords. HTTP tests verify both paths and that rejected weak-password requests create no account or email. The optional dummy-hash login timing mitigation was not implemented; these fixes do not claim constant-time authentication or email delivery.
 
 **Where:** `AuthController.cs:200-204`. The existence check (`:200`) runs before password validation (`:202-204`).
 
@@ -114,7 +122,7 @@ These two changes keep the 2026-10-19 protection, where a click alone never acti
 
 ## Checked and fine
 
-- **Password policy:** at least 12 characters with upper, lower, digit and symbol (`IdentitySetup.cs:12-16`), stored as Identity PBKDF2 hashes. Login, register, reset and 2FA login share 20/min per IP. TOTP failures at login count toward lockout.
+- **Password policy:** at least 12 characters with upper, lower, digit and symbol (`IdentitySetup.cs:12-16`), stored as Identity PBKDF2 hashes. Login, reset and 2FA login share 20/min per IP; registration has its own 5/hour IP policy after this follow-up. TOTP failures at login count toward lockout.
 - **Email confirmation:** required to sign in (`IdentitySetup.cs:17`). Confirming needs the token and the chosen password, and rotates the security stamp.
 - **Password reset:** a dedicated Data Protection provider issues tokens valid for 1 hour. They are tied to the security stamp, so they work only once in practice. A reset revokes all sessions, and `forgot-password` gives the same response for every address.
 - **Google sign-in:** uses correlation and state cookies, and requires `email_verified`. It never merges accounts by matching email. Linking requires a confirmed email plus password and 2FA, and the challenge is tied to the user and stamp and expires in 5 minutes. The callback builds redirects only from the configured HTTPS `FrontendUrl`, so there is no open redirect. Tokens are not saved (`SaveTokens = false`).
@@ -159,3 +167,11 @@ These two changes keep the 2026-10-19 protection, where a click alone never acti
 - Render's proxy behaviour (see #7).
 - Load testing.
 - Anything that requires signing in on production.
+
+## 2026-10-20 follow-up verification
+
+Findings #1–#4 are fixed in the local changes; production has not been changed. The original exploit descriptions and suggested fixes above are retained as the audit record. No new dependency or schema migration is required. Tests extend `GuestSecurityIntegrationTests` and `SecurityHardeningTests`, with atomic budget/reset/logging tests in `DailyEmailBudgetTests`.
+
+Verification: `dotnet test DoneToday.Tests/DoneToday.Tests.csproj -c Release` with the disposable loopback PostgreSQL connection: **144 passed, 0 failed, 0 skipped**. The dependency review also updates Vite to 8.3.3 for GHSA-698v-4r3x-3vcv (Windows development-server editor launch). `npm test` runs the existing Node and UI suites. Frontend build, lint and tests are checked for this toolchain update; frontend application behavior is unchanged.
+
+Still open, deliberately outside this follow-up: **#5** encryption of stored TOTP/recovery material; **#6** targeted account lockout abuse; **#7** validation of Render forwarded client IPs; **#8** separation of migration and runtime database privileges. The in-memory budget's restart/multi-instance limits and residual response timing are also documented limitations, not claims of complete abuse prevention.

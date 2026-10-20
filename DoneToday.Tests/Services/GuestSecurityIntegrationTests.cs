@@ -197,8 +197,18 @@ public class GuestSecurityIntegrationTests
             UserName = "guest-cap" + i, Email = "cap" + i + "@guest.invalid", CreatedAt = capacity.Clock.Now
         }));
         await db.SaveChangesAsync();
-        await capacity.Browser().Post("/api/auth/guest", new { }, 429);
+        var oldest = await db.Users.OrderBy(u => u.Id).FirstAsync();
+        await db.Users.Where(u => u.Id == oldest.Id).ExecuteUpdateAsync(s => s.SetProperty(u => u.CreatedAt, capacity.Clock.Now.AddDays(-2)));
+        await capacity.Browser().Post("/api/auth/guest", new { }, 200);
+        Assert.False(await db.Users.AnyAsync(u => u.Id == oldest.Id));
         Assert.Equal(GuestLifecycle.MaximumAccounts, await GuestLifecycle.Unlinked(db.Users).CountAsync());
+        await Task.WhenAll(capacity.Browser().Post("/api/auth/guest", new { }, 200), capacity.Browser().Post("/api/auth/guest", new { }, 200));
+        Assert.Equal(GuestLifecycle.MaximumAccounts, await GuestLifecycle.Unlinked(db.Users).CountAsync());
+        // Accounts containing habits must never be evicted to make room.
+        await db.Database.ExecuteSqlRawAsync("INSERT INTO \"Habits\" (\"UserId\", \"SortOrder\", \"Name\", \"Icon\", \"CreatedAt\", \"IsArchived\") SELECT \"Id\", 0, 'Keep data', 'habit', now(), false FROM \"Users\"");
+        var rejected = await capacity.Browser().Post("/api/auth/guest", new { }, 429);
+        Assert.Contains("guestCapacity", rejected);
+        Assert.Equal(GuestLifecycle.MaximumAccounts, await db.Habits.CountAsync());
     }
 
     [SecurityPostgresFact]
@@ -217,6 +227,7 @@ public class GuestSecurityIntegrationTests
         Assert.Empty(await db.Habits.ToListAsync());
         var expired = new User { UserName = "guest-old", Email = "old@guest.invalid", CreatedAt = host.Clock.Now.AddDays(-121) };
         var recent = new User { UserName = "guest-recent", Email = "recent@guest.invalid", CreatedAt = host.Clock.Now.AddDays(-119) };
+        recent.Habits.Add(new Habit { Name = "Retain data", CreatedAt = host.Clock.Now.AddDays(-119) });
         db.Users.AddRange(expired, recent);
         await db.SaveChangesAsync();
         var converted = await host.Seed("converted@example.test");
@@ -229,6 +240,174 @@ public class GuestSecurityIntegrationTests
         var registered = host.Browser();
         await registered.Post("/api/auth/login", new { email = "converted@example.test", password = Password }, 200);
         await registered.Post("/api/profile/guest/delete", new { confirm = true }, 400);
+    }
+
+    [SecurityPostgresFact]
+    public async Task CleanupRemovesOnlyOldEmptyGuestsAndUnconfirmedLocalAccounts()
+    {
+        await using var host = await TestHost.Start();
+        using var scope = host.App.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        User Guest(string key, double hours) => new() { UserName = "guest-" + key, Email = key + "@guest.invalid", CreatedAt = host.Clock.Now.AddHours(-hours) };
+        var empty = Guest("empty", 25);
+        var boundary = Guest("boundary", 24);
+        var data = Guest("data", 119 * 24);
+        data.Habits.Add(new Habit { Name = "Keep history", CreatedAt = host.Clock.Now.AddDays(-119) });
+        var expiredData = Guest("expired-data", 121 * 24);
+        expiredData.Habits.Add(new Habit { Name = "Expired history", CreatedAt = host.Clock.Now.AddDays(-121) });
+        var linkedGuest = Guest("linked", 121 * 24);
+        db.Users.AddRange(empty, boundary, data, expiredData, linkedGuest);
+        await db.SaveChangesAsync();
+        db.UserLogins.Add(new IdentityUserLogin<int> { UserId = linkedGuest.Id, LoginProvider = "Google", ProviderKey = "linked-guest" });
+        var old = await host.Seed("expired-local@example.test", false);
+        var recent = await host.Seed("recent-local@example.test", false);
+        var confirmed = await host.Seed("confirmed-local@example.test");
+        var external = await host.Seed("external-local@example.test", false);
+        var unexpectedData = await host.Seed("local-data@example.test", false);
+        db.UserLogins.Add(new IdentityUserLogin<int> { UserId = external.Id, LoginProvider = "Google", ProviderKey = "external-local" });
+        db.Habits.Add(new Habit { UserId = unexpectedData.Id, Name = "Preserve unexpected data", CreatedAt = host.Clock.Now });
+        await db.SaveChangesAsync();
+        int[] oldIds = [old.Id, confirmed.Id, external.Id, unexpectedData.Id];
+        await db.Users.Where(u => oldIds.Contains(u.Id)).ExecuteUpdateAsync(s => s.SetProperty(u => u.CreatedAt, host.Clock.Now.AddHours(-49)));
+        await db.Users.Where(u => u.Id == recent.Id).ExecuteUpdateAsync(s => s.SetProperty(u => u.CreatedAt, host.Clock.Now.AddHours(-48)));
+        Assert.Equal(2, await GuestLifecycle.RemoveExpiredAsync(db, host.Clock.Now));
+        Assert.Equal(1, await GuestLifecycle.RemoveUnconfirmedAsync(db, host.Clock.Now));
+        int[] removed = [empty.Id, expiredData.Id, old.Id];
+        Assert.False(await db.Users.AnyAsync(u => removed.Contains(u.Id)));
+        int[] retained = [boundary.Id, data.Id, linkedGuest.Id, recent.Id, confirmed.Id, external.Id, unexpectedData.Id];
+        Assert.Equal(retained.Length, await db.Users.CountAsync(u => retained.Contains(u.Id)));
+        Assert.True(await db.Habits.AnyAsync(h => h.UserId == data.Id));
+        Assert.False(await db.Habits.AnyAsync(h => h.UserId == expiredData.Id));
+    }
+
+    [SecurityPostgresFact]
+    public async Task AllEmailSendPathsShareTheDailyBudgetWithoutRevealingAccountExistence()
+    {
+        await using var host = await TestHost.Start(dailyBudget: 1);
+        await host.Seed("confirmed@example.test");
+        await host.Seed("pending@example.test", false);
+        await host.Seed("collision@example.test");
+        var browser = host.Browser();
+        await browser.Post("/api/auth/register", new { email = "first@example.test", password = Password }, 200);
+        Assert.Single(host.Mail.Links);
+        var fresh = await browser.Post("/api/auth/register", new { email = "second@example.test", password = Password }, 200);
+        var existing = await browser.Post("/api/auth/register", new { email = "collision@example.test", password = Password }, 200);
+        Assert.Equal(fresh, existing);
+        Assert.Equal(await browser.Post("/api/auth/resend-confirmation", new { email = "pending@example.test" }, 200),
+            await browser.Post("/api/auth/resend-confirmation", new { email = "unknown-confirm@example.test" }, 200));
+        Assert.Equal(await browser.Post("/api/auth/forgot-password", new { email = "confirmed@example.test" }, 200),
+            await browser.Post("/api/auth/forgot-password", new { email = "unknown-reset@example.test" }, 200));
+        var guest = host.Browser();
+        await guest.Post("/api/auth/guest", new { }, 200);
+        fresh = await guest.Post("/api/auth/guest/register", new { email = "guest-new@example.test", password = Password }, 200);
+        host.Clock.Now = host.Clock.Now.AddMinutes(1);
+        existing = await guest.Post("/api/auth/guest/register", new { email = "collision@example.test", password = Password }, 200);
+        Assert.Equal(fresh, existing);
+        host.Clock.Now = host.Clock.Now.AddMinutes(1);
+        await guest.Post("/api/auth/guest/resend-confirmation", new { }, 200);
+        Assert.True((await guest.Me()).GetProperty("isGuest").GetBoolean());
+        Assert.Single(host.Mail.Links);
+        // Real sends resume on the next UTC day; recipient cooldowns have also elapsed.
+        host.Clock.Now = host.Clock.Now.AddDays(1);
+        await browser.Post("/api/auth/forgot-password", new { email = "confirmed@example.test" }, 200);
+        Assert.Equal(2, host.Mail.Links.Count);
+    }
+
+    [SecurityPostgresFact]
+    public async Task RegistrationValidatesPasswordsBeforeLookingUpExistingEmails()
+    {
+        await using var host = await TestHost.Start();
+        await host.Seed("known@example.test");
+        var browser = host.Browser();
+        var known = await browser.Post("/api/auth/register", new { email = "known@example.test", password = "aaaaaaaaaaaa" }, 400);
+        var unknown = await browser.Post("/api/auth/register", new { email = "unknown@example.test", password = "aaaaaaaaaaaa" }, 400);
+        Assert.Equal(known, unknown);
+        Assert.Contains("PasswordRequiresUpper", known);
+        Assert.Empty(host.Mail.Links);
+        using var scope = host.App.Services.CreateScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        Assert.Null(await users.FindByEmailAsync("unknown@example.test"));
+        known = await browser.Post("/api/auth/register", new { email = "known@example.test", password = Password }, 200);
+        unknown = await browser.Post("/api/auth/register", new { email = "unknown@example.test", password = Password }, 200);
+        Assert.Equal(known, unknown);
+        Assert.Single(host.Mail.Links);
+    }
+
+    [SecurityPostgresFact]
+    public async Task GoogleSignUpReplacesUnconfirmedLocalAccountAndRejectsItsOldSession()
+    {
+        await using var host = await TestHost.Start();
+        var squatted = await host.Seed("owner@example.test", false);
+        var oldBrowser = host.Browser();
+        await oldBrowser.Get($"/test/sign-in/{squatted.Id}", 200);
+        var oldCookie = oldBrowser.Cookie;
+        var google = host.Browser();
+        await google.Post("/test/external", new { email = "owner@example.test", providerKey = "verified-owner", signUp = true }, 200);
+        await google.Get("/api/auth/external/callback", 302);
+        var owner = await google.Me();
+        Assert.NotEqual(squatted.Id, owner.GetProperty("id").GetInt32());
+        Assert.False(owner.GetProperty("hasPassword").GetBoolean());
+        await host.Browser(oldCookie).Get("/api/auth/me", 401);
+        await host.Browser().Post("/api/auth/login", new { email = "owner@example.test", password = Password }, 401);
+        using var scope = host.App.Services.CreateScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        Assert.Null(await users.FindByIdAsync(squatted.Id.ToString()));
+        var replacement = await users.FindByLoginAsync("Google", "verified-owner");
+        Assert.NotNull(replacement);
+        Assert.True(replacement.EmailConfirmed);
+        Assert.Equal(owner.GetProperty("id").GetInt32(), replacement.Id);
+    }
+
+    [SecurityPostgresFact]
+    public async Task GoogleSignUpDoesNotReplaceConfirmedLinkedGuestOrUnverifiedAccounts()
+    {
+        await using var host = await TestHost.Start();
+        var confirmed = await host.Seed("confirmed@example.test");
+        var linked = await host.Seed("linked@example.test", false);
+        var pending = await host.Seed("pending@example.test", false);
+        using var scope = host.App.Services.CreateScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        Assert.True((await users.AddLoginAsync((await users.FindByIdAsync(linked.Id.ToString()))!, new UserLoginInfo("Other", "other-key", "Other"))).Succeeded);
+        var guest = host.Browser();
+        await guest.Post("/api/auth/guest", new { }, 200);
+        var guestState = await guest.Me();
+        foreach (var email in new[] { confirmed.Email!, linked.Email!, guestState.GetProperty("email").GetString()! })
+        {
+            var browser = host.Browser();
+            await browser.Post("/test/external", new { email, providerKey = Guid.NewGuid().ToString(), signUp = true }, 200);
+            var location = await browser.GetLocation("/api/auth/external/callback");
+            Assert.Contains("externalError=existingAccount", location.Query);
+            Assert.True((await users.FindByEmailAsync(email)) is not null);
+            await browser.Get("/api/auth/me", 401);
+        }
+        var unverified = host.Browser();
+        await unverified.Post("/test/external", new { email = pending.Email, providerKey = "unverified", signUp = true, verified = false }, 200);
+        await unverified.Get("/api/auth/external/callback", 302);
+        Assert.NotNull(await users.FindByIdAsync(pending.Id.ToString()));
+        Assert.Null(await users.FindByLoginAsync("Google", "unverified"));
+    }
+
+    [SecurityPostgresFact]
+    public async Task FailedGoogleAccountCreationRollsBackTheUnconfirmedAccountDeletion()
+    {
+        await using var host = await TestHost.Start();
+        var pending = await host.Seed("owner@example.test", false);
+        using (var scope = host.App.Services.CreateScope())
+        {
+            var users = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+            Assert.True((await users.SetUserNameAsync((await users.FindByIdAsync(pending.Id.ToString()))!, "pending-owner")).Succeeded);
+            var blocker = await host.Seed("other@example.test");
+            Assert.True((await users.SetUserNameAsync((await users.FindByIdAsync(blocker.Id.ToString()))!, "owner@example.test")).Succeeded);
+        }
+        var browser = host.Browser();
+        await browser.Post("/test/external", new { email = pending.Email, providerKey = "rollback-key", signUp = true }, 200);
+        var location = await browser.GetLocation("/api/auth/external/callback");
+        Assert.Contains("externalError=failed", location.Query);
+        using var state = host.App.Services.CreateScope();
+        var db = state.ServiceProvider.GetRequiredService<AppDbContext>();
+        Assert.True(await db.Users.AnyAsync(u => u.Id == pending.Id && !u.EmailConfirmed));
+        Assert.False(await db.UserLogins.AnyAsync(login => login.LoginProvider == "Google" && login.ProviderKey == "rollback-key"));
+        await browser.Get("/api/auth/me", 401);
     }
 
     private sealed class TestClock : TimeProvider
@@ -270,6 +449,11 @@ public class GuestSecurityIntegrationTests
             return string.IsNullOrEmpty(body) || expected != 200 ? default : JsonSerializer.Deserialize<JsonElement>(body);
         }
         public Task<JsonElement> Me() => Get("/api/auth/me", 200);
+        public async Task<Uri> GetLocation(string path)
+        {
+            using var response = await Send(new HttpRequestMessage(HttpMethod.Get, path), 302);
+            return response.Headers.Location!;
+        }
         public async Task<string> Post(string path, object body, int expected)
         {
             var csrf = await Get("/api/auth/csrf", 200);
@@ -310,7 +494,7 @@ public class GuestSecurityIntegrationTests
             Assert.True((await users.CreateAsync(user, Password)).Succeeded);
             return user;
         }
-        public static async Task<TestHost> Start()
+        public static async Task<TestHost> Start(int? dailyBudget = null)
         {
             var host = new TestHost();
             var settings = new NpgsqlConnectionStringBuilder(Environment.GetEnvironmentVariable("DONETODAY_SECURITY_TEST_CONNECTION"));
@@ -342,7 +526,7 @@ public class GuestSecurityIntegrationTests
             builder.Services.AddScoped<StreakService>();
             builder.Services.AddScoped<ProgressService>();
             builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?> {
-                ["Authentication:FrontendUrl"] = "https://localhost:5173",
+                ["Authentication:FrontendUrl"] = "https://localhost:5173", ["Email:DailyBudget"] = (dailyBudget ?? 250).ToString(),
                 ["Authentication:Google:ClientId"] = "test-only", ["Authentication:Google:ClientSecret"] = "test-only"
             });
             builder.Services.AddDoneTodayGoogle(builder.Configuration);
@@ -357,15 +541,18 @@ public class GuestSecurityIntegrationTests
                 return Results.Ok(new { });
             });
             host.App.MapPost("/test/external", async (ExternalProof request, HttpContext context, UserManager<User> users) => {
-                var user = (await users.GetUserAsync(context.User))!;
                 var properties = new AuthenticationProperties();
                 properties.Items["LoginProvider"] = "Google";
-                properties.Items["XsrfId"] = user.Id.ToString();
-                properties.Items["linkUserId"] = user.Id.ToString();
-                properties.Items["linkStamp"] = user.SecurityStamp;
+                if (!request.SignUp)
+                {
+                    var user = (await users.GetUserAsync(context.User))!;
+                    properties.Items["XsrfId"] = user.Id.ToString();
+                    properties.Items["linkUserId"] = user.Id.ToString();
+                    properties.Items["linkStamp"] = user.SecurityStamp;
+                }
                 await context.SignInAsync(IdentityConstants.ExternalScheme,
                     new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, request.ProviderKey),
-                        new Claim(ClaimTypes.Email, request.Email), new Claim("google:email_verified", "true")], "Google")), properties);
+                        new Claim(ClaimTypes.Email, request.Email), new Claim("google:email_verified", request.Verified ? "true" : "false")], "Google")), properties);
                 return Results.Ok(new { });
             });
             using (var scope = host.App.Services.CreateScope())
@@ -385,5 +572,5 @@ public class GuestSecurityIntegrationTests
             await drop.ExecuteNonQueryAsync();
         }
     }
-    private sealed record ExternalProof(string Email, string ProviderKey);
+    private sealed record ExternalProof(string Email, string ProviderKey, bool SignUp = false, bool Verified = true);
 }

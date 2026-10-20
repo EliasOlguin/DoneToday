@@ -263,7 +263,7 @@ public class SecurityHardeningTests
             using var authLimited = await client.PostAsync("/api/auth/probe", null);
             Assert.Equal(HttpStatusCode.TooManyRequests, authLimited.StatusCode);
             // Exercise the real controller endpoints after exhausting the shared IP budget.
-            foreach (var path in new[] { "/api/auth/login", "/api/auth/two-factor/login", "/api/auth/register",
+            foreach (var path in new[] { "/api/auth/login", "/api/auth/two-factor/login",
                 "/api/auth/forgot-password", "/api/auth/confirm-email", "/api/profile/delete" })
             {
                 using var rejected = await client.PostAsJsonAsync(path, new { });
@@ -272,6 +272,15 @@ public class SecurityHardeningTests
             }
             using var deletionVerification = await client.GetAsync("/api/profile/delete-verification");
             Assert.Equal(HttpStatusCode.TooManyRequests, deletionVerification.StatusCode);
+            // Registration has an independent five-per-hour IP bucket, including rejected payloads.
+            for (var i = 0; i < 5; i++)
+            {
+                using var registration = await client.PostAsJsonAsync("/api/auth/register", new { });
+                Assert.Equal(HttpStatusCode.BadRequest, registration.StatusCode);
+            }
+            using var registrationLimited = await client.PostAsJsonAsync("/api/auth/register", new { });
+            Assert.Equal(HttpStatusCode.TooManyRequests, registrationLimited.StatusCode);
+            Assert.NotNull(registrationLimited.Headers.RetryAfter);
         }
         finally { await app.StopAsync(); }
     }

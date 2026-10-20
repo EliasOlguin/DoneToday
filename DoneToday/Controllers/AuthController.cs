@@ -18,7 +18,7 @@ namespace DoneToday.Api.Controllers;
 [Route("api/auth")]
 public class AuthController(UserManager<User> users, SignInManager<User> signIn, IEmailSender<User> emailSender,
     IConfiguration configuration, IHostEnvironment environment, RecipientEmailThrottle emailThrottle, DoneToday.Api.Data.AppDbContext database,
-    GuestRegistration guestRegistration, SensitiveActionVerifier verification, ILogger<AuthController> logger) : ControllerBase
+    GuestRegistration guestRegistration, SensitiveActionVerifier verification, ILogger<AuthController> logger, DailyEmailBudget sendBudget) : ControllerBase
 {
     [HttpPost("guest")]
     [EnableRateLimiting("guest")]
@@ -36,8 +36,15 @@ public class AuthController(UserManager<User> users, SignInManager<User> signIn,
         await using (var transaction = await database.Database.BeginTransactionAsync(HttpContext.RequestAborted))
         {
             await database.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(71357, {0})", HttpContext.RequestAborted);
-            if (await GuestLifecycle.Unlinked(database.Users).CountAsync(HttpContext.RequestAborted) >= GuestLifecycle.MaximumAccounts)
-                return StatusCode(429, new { code = "guestCapacity" });
+            while (await GuestLifecycle.Unlinked(database.Users).CountAsync(HttpContext.RequestAborted) >= GuestLifecycle.MaximumAccounts)
+            {
+                var oldest = await GuestLifecycle.EmptyUnlinked(database).OrderBy(user => user.CreatedAt).ThenBy(user => user.Id)
+                    .Select(user => user.Id).FirstOrDefaultAsync(HttpContext.RequestAborted);
+                if (oldest == 0) return StatusCode(429, new { code = "guestCapacity" });
+                // Lock before rechecking emptiness: concurrent habit inserts must not be deleted by cascade.
+                await database.Database.ExecuteSqlInterpolatedAsync($"SELECT 1 FROM \"Users\" WHERE \"Id\" = {oldest} FOR UPDATE", HttpContext.RequestAborted);
+                await GuestLifecycle.EmptyUnlinked(database).Where(user => user.Id == oldest).ExecuteDeleteAsync(HttpContext.RequestAborted);
+            }
             if (!(await users.CreateAsync(user)).Succeeded) return BadRequest();
             await transaction.CommitAsync(HttpContext.RequestAborted);
         }
@@ -96,6 +103,7 @@ public class AuthController(UserManager<User> users, SignInManager<User> signIn,
         if (EmailCooldown("reset", request.Email) is { } limited) return limited;
         var user = await users.FindByEmailAsync(request.Email.Trim());
         if (user is null || !user.EmailConfirmed || !await users.HasPasswordAsync(user)) return Ok();
+        if (!sendBudget.TryReserve()) return Ok();
         var token = await users.GeneratePasswordResetTokenAsync(user);
         var link = BuildEmailLink("/reset-password", user, token);
         try { await emailSender.SendPasswordResetLinkAsync(user, user.Email!, link); }
@@ -192,13 +200,20 @@ public class AuthController(UserManager<User> users, SignInManager<User> signIn,
     }
 
     [HttpPost("register")]
-    [EnableRateLimiting("authentication")]
+    [EnableRateLimiting("registration")]
     [ValidateCsrf]
     public async Task<IActionResult> Register(RegisterRequest request)
     {
         var email = request.Email.Trim();
-        if (await users.FindByEmailAsync(email) is not null) { emailThrottle.Reserve("confirm", email); return Ok(); }
         var user = new User { UserName = email, Email = email };
+        var errors = new List<string>();
+        foreach (var validator in users.PasswordValidators)
+        {
+            var validation = await validator.ValidateAsync(users, user, request.Password);
+            errors.AddRange(validation.Errors.Select(error => error.Code));
+        }
+        if (errors.Count > 0) return BadRequest(new { codes = errors });
+        if (await users.FindByEmailAsync(email) is not null) { emailThrottle.Reserve("confirm", email); return Ok(); }
         var result = await users.CreateAsync(user, request.Password);
         if (!result.Succeeded)
             return BadRequest(new { codes = result.Errors.Select(error => error.Code) });
@@ -283,6 +298,7 @@ public class AuthController(UserManager<User> users, SignInManager<User> signIn,
 
     private async Task<IActionResult> DeliverConfirmation(User user, string email, string link)
     {
+        if (!sendBudget.TryReserve()) return Ok();
         try { await emailSender.SendConfirmationLinkAsync(user, email, link); }
         catch (Exception exception) when (exception is IOException or MailKit.Net.Smtp.SmtpCommandException
             or MailKit.Net.Smtp.SmtpProtocolException or System.Net.Sockets.SocketException or HttpRequestException or TaskCanceledException)

@@ -148,8 +148,17 @@ public class ExternalAuthController(UserManager<User> users, SignInManager<User>
                 return result.Succeeded ? Back("/today") : Back("/login", "failed");
             }
             var email = info.Principal.FindFirstValue(ClaimTypes.Email)!;
-            if (await users.FindByEmailAsync(email) is not null) return Back("/login", "existingAccount");
             await using var transaction = await database.Database.BeginTransactionAsync();
+            var local = await users.FindByEmailAsync(email);
+            if (local is not null)
+            {
+                // Serialize replacement with confirmation/conversion and recheck the current state.
+                await database.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(71356, {local.Id})");
+                await database.Entry(local).ReloadAsync();
+                if (database.Entry(local).State == EntityState.Detached || local.IsGuest || local.EmailConfirmed ||
+                    (await users.GetLoginsAsync(local)).Count != 0) return Back("/login", "existingAccount");
+                if (!(await users.DeleteAsync(local)).Succeeded) return Back("/login", "failed");
+            }
             var newUser = new User { UserName = email, Email = email, EmailConfirmed = true };
             if (!(await users.CreateAsync(newUser)).Succeeded) return Back("/login", "failed");
             if (!(await users.AddLoginAsync(newUser, info)).Succeeded) return Back("/login", "failed");

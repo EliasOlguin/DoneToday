@@ -17,6 +17,7 @@ public static class ApiSecurity
         services.AddSingleton<EarlyRequestLimiter>();
         services.AddSingleton<GuestRegistration>();
         services.AddSingleton<DoneToday.Api.Services.Email.RecipientEmailThrottle>();
+        services.AddSingleton<DoneToday.Api.Services.Email.DailyEmailBudget>();
         services.AddSingleton<ReverificationAttempts>();
         services.AddScoped<SensitiveActionVerifier>();
         services.AddSingleton<DeleteAccountVerification>();
@@ -30,6 +31,8 @@ public static class ApiSecurity
                 await context.HttpContext.Response.WriteAsJsonAsync(new { code = "rateLimited" }, cancellation);
             };
             options.AddPolicy("authentication", context => Window("auth:" + Ip(context), 20));
+            options.AddPolicy("registration", context => RateLimitPartition.GetFixedWindowLimiter("register:" + Ip(context),
+                _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromHours(1), QueueLimit = 0, AutoReplenishment = true }));
             options.AddPolicy("guest", context => RateLimitPartition.GetFixedWindowLimiter("guest:" + Ip(context),
                 _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromHours(1), QueueLimit = 0, AutoReplenishment = true }));
             options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>

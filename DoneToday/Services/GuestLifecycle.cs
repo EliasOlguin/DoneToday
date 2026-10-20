@@ -14,11 +14,28 @@ public static class GuestLifecycle
         user.Email == user.UserName.Substring(6) + "@guest.invalid" &&
         user.PasswordHash == null && !user.EmailConfirmed);
 
+    public static IQueryable<User> EmptyUnlinked(AppDbContext database) => Unlinked(database.Users)
+        .Where(user => !database.Habits.Any(habit => habit.UserId == user.Id) &&
+            !database.UserLogins.Any(login => login.UserId == user.Id));
+
     public static Task<int> RemoveExpiredAsync(AppDbContext database, DateTimeOffset now, CancellationToken cancellation = default)
     {
         var cutoff = now - Retention;
-        return Unlinked(database.Users).Where(user => user.CreatedAt < cutoff &&
+        var emptyCutoff = now.AddDays(-1);
+        return Unlinked(database.Users).Where(user => (user.CreatedAt < cutoff ||
+            (user.CreatedAt < emptyCutoff && !database.Habits.Any(habit => habit.UserId == user.Id))) &&
             !database.UserLogins.Any(login => login.UserId == user.Id)).ExecuteDeleteAsync(cancellation);
+    }
+
+    public static Task<int> RemoveUnconfirmedAsync(AppDbContext database, DateTimeOffset now, CancellationToken cancellation = default)
+    {
+        var cutoff = now.AddHours(-48);
+        // Do not remove guests or linked accounts; preserve unexpected existing data as well.
+        return database.Users.Where(user => !user.EmailConfirmed && user.CreatedAt < cutoff &&
+            !(user.UserName != null && user.UserName.StartsWith("guest-") &&
+                user.Email == user.UserName.Substring(6) + "@guest.invalid") &&
+            !database.UserLogins.Any(login => login.UserId == user.Id) &&
+            !database.Habits.Any(habit => habit.UserId == user.Id)).ExecuteDeleteAsync(cancellation);
     }
 }
 
@@ -33,9 +50,10 @@ public sealed class GuestCleanup(IServiceScopeFactory scopes, TimeProvider clock
             {
                 await using var scope = scopes.CreateAsyncScope();
                 var database = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                // Single conditional DELETE: converted accounts are excluded, including concurrent conversions.
+                // Conditional deletes exclude accounts that have already converted.
                 var deleted = await GuestLifecycle.RemoveExpiredAsync(database, clock.GetUtcNow(), stoppingToken);
-                if (deleted > 0) logger.LogInformation("Removed {Count} expired unlinked guest accounts.", deleted);
+                deleted += await GuestLifecycle.RemoveUnconfirmedAsync(database, clock.GetUtcNow(), stoppingToken);
+                if (deleted > 0) logger.LogInformation("Removed {Count} expired unlinked or unconfirmed accounts.", deleted);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { return; }
             catch (Exception error) { logger.LogError(error, "Guest retention cleanup failed; will retry tomorrow."); }
