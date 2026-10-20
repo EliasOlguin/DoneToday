@@ -10,13 +10,13 @@ A habit tracker for people who want to build routines, record daily progress, an
 
 ### Today: scheduled habits, streaks, and weekly progress
 
-![Today view with three scheduled habits and a consistent weekly summary of 6 out of 9 completions](docs/images/today.webp)
+![Today view with three scheduled habits and a consistent weekly summary of 6 out of 9 completions](docs/images/today-en.webp)
 
 ### Statistics: daily completions, habit breakdown, and monthly calendar
 
-![Statistics view showing completed Monday and Tuesday, a pending Wednesday, and excluded future dates](docs/images/statistics.webp)
+![Statistics view showing completed Monday and Tuesday, a pending Wednesday, and excluded future dates](docs/images/statistics-en.webp)
 
-Screenshots use demo data with a shared reference date of October 14, 2026. The Spanish interface is shown; English and German are also available.
+Screenshots use demo data with a shared reference date of October 14, 2026. The English interface is shown; Spanish and German are also available.
 
 ## Live demo
 
