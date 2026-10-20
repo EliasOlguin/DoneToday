@@ -1,87 +1,127 @@
 # DoneToday
 
-UX changes, validation and limitations / Mejoras de experiencia, pruebas y límites: [UX improvements / Mejoras UX](docs/ux-improvements.md).
+[![CI](https://github.com/EliasOlguin/DoneToday/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/EliasOlguin/DoneToday/actions/workflows/ci.yml)
 
-Security controls, rate/data limits and verification: [Security / Seguridad](docs/security.md). / Controles de seguridad, límites de uso y verificaciones: [Seguridad / Security](docs/security.md).
+A habit tracker for people who want to build routines, record daily progress, and understand their consistency over time.
 
-Deployment preparation / Preparación de despliegue: [Render Free + Neon + Brevo](docs/deployment.md).
+[Leer en español](README.es.md)
 
-[English](#english) · [Español](#español)
+## Screenshots
 
-## English
+### Today: scheduled habits, streaks, and weekly progress
 
-### Version 1.0.0
+![Today view with three scheduled habits and a consistent weekly summary of 6 out of 9 completions](docs/images/today.webp)
 
-The first release adds saved manual habit ordering, a completion notice with Undo, a monthly progress calendar, editable display names and permanent account deletion from Settings. Reordering uses a pointer handle (mouse/touch) or keyboard-accessible up/down buttons; Save applies the order to Habits and Today. Monthly totals include currently active habits and scheduled dates through the user's local today. Existing schedule history is respected.
+### Statistics: daily completions, habit breakdown, and monthly calendar
 
-`VERSION` is the release source, read by the frontend and .NET build; `DoneToday.Web/package.json` and its lockfile use the same version. Settings displays it. [CHANGELOG](CHANGELOG.md) records releases. Corrections become `1.0.x`, new compatible features `1.x.0`. Apply `AddProfileAndHabitOrder` before running this version. Render applies pending migrations on startup. A Git release tag can identify the validated published build; updating version metadata alone does not publish anything.
+![Statistics view showing completed Monday and Tuesday, a pending Wednesday, and excluded future dates](docs/images/statistics.webp)
 
-Account deletion requires an authenticated session, CSRF protection, the account email, the current password for password accounts and an authenticator code when 2FA is enabled. It removes Identity records, habits, schedules and completions and signs out the browser. Google-only accounts confirm their email without creating a local password. The action is irreversible and must be initiated and confirmed by the user.
+Screenshots use demo data with a shared reference date of October 14, 2026. The Spanish interface is shown; English and German are also available.
 
-DoneToday is a mobile-first habit tracker built with ASP.NET Core and React. Create routines, choose their scheduled days, complete today's habits, and track streaks and weekly progress.
+## Live demo
 
-### Features
+[Open DoneToday](https://donetoday-15xl.onrender.com)
 
-- Today: scheduled habits, complete/undo actions, current and best streaks.
-- Habits: create, edit, view completion history, archive, and restore.
-- Statistics: weekly totals, daily completion chart, and breakdown by habit.
-- Settings: persistent dark/light theme and English, Spanish, or German interface.
-- Language detection: saved choice first, browser preferences second, English fallback.
+Use the guest option to explore without registering, or create an account with email confirmation. Google sign-in is available when provider credentials are configured.
 
-Habit names and descriptions keep the text entered by the user. The interface language does not change scheduling: dates use the user's saved IANA time zone and the week starts on Monday. The browser time zone is saved on first sign-in and can be changed in Settings; another device does not overwrite it. Changes to scheduled days take effect tomorrow in that time zone; previous schedules and completion dates remain in the history. Event timestamps remain UTC. Existing accounts are initialized on their next sign-in; old UTC-based completion dates are not rewritten.
+## Stack
 
-### Stack and repository
+| Area | Technology |
+| --- | --- |
+| Frontend | React 19, TypeScript 6, Vite 8, Tailwind CSS 4 |
+| Navigation and server data | React Router, TanStack Query |
+| Languages | i18next and react-i18next; English, Spanish, German |
+| Backend | ASP.NET Core 10, Kestrel, Entity Framework Core 10 |
+| Database and accounts | PostgreSQL, ASP.NET Core Identity, cookie authentication, optional authenticator 2FA |
+| Email | MailKit/SMTP; Brevo for the Render deployment |
+| Deployment | Multi-stage Docker build; frontend assets served by the API on Render |
+| Tests | xUnit, Vitest, Testing Library, Node.js test runner |
 
-| Directory          | Responsibility                                                                            |
-| ------------------ | ----------------------------------------------------------------------------------------- |
-| `DoneToday/`       | ASP.NET Core 10 API, EF Core, PostgreSQL, migrations, and domain services                 |
-| `DoneToday.Tests/` | xUnit tests for streaks, scheduling, and progress                                         |
-| `DoneToday.Web/`   | React 19, TypeScript 6, Vite 8, Tailwind CSS 4, React Router, TanStack Query, and i18next |
+## Technical decisions
 
-### Local setup
+| Decision | Why it matters | Code to inspect |
+| --- | --- | --- |
+| **One time zone per account.** Habit dates use a saved IANA zone, with UTC as fallback; the first browser detection does not overwrite an existing preference. | Two devices agree on what “today” means, including around midnight and daylight-saving changes. | [UserDateService](DoneToday/Services/UserDateService.cs), [ProfileController](DoneToday/Controllers/ProfileController.cs), [tests](DoneToday.Tests/Services/UserDateServiceTests.cs) |
+| **Schedule changes preserve the past.** Existing schedules end today and replacements start tomorrow. Streaks use the schedule valid on each date. | Editing a routine does not retroactively change the days on which it was expected. | [HabitScheduleService](DoneToday/Services/HabitScheduleService.cs), [StreakService](DoneToday/Services/StreakService.cs), [tests](DoneToday.Tests/Services/HabitScheduleServiceTests.cs) |
+| **Guest conversion requires both browser and email proof.** Pending registration is bound to the guest account, browser secret, security stamp, and expiry. Confirmation retains the account and its habits. | Trying the app does not require an email, while claiming the guest's data requires more than opening a confirmation link. | [GuestRegistration](DoneToday/Services/GuestRegistration.cs), [confirmation flow](DoneToday/Controllers/AuthController.cs), [integration tests](DoneToday.Tests/Services/GuestSecurityIntegrationTests.cs) |
+| **Quantity recording handles retries and conflicting edits.** Operation IDs prevent duplicate additions; corrections check a revision, and writes are serialized per habit in a database transaction. | Retrying after a network failure does not add the same amount twice, and a stale correction is rejected. | [HabitProgressController](DoneToday/Controllers/HabitProgressController.cs), [database constraints](DoneToday/Data/AppDbContext.cs), [UI recovery tests](DoneToday.Web/tests/ux-flows.ui.test.tsx) |
+| **Secondary pages and translations load on demand.** Today stays in the entry bundle; other pages use `React.lazy` with `Suspense`, and language catalogs use dynamic imports. | The first visit avoids downloading every settings, account, and statistics screen and all three catalogs upfront. | [Routes](DoneToday.Web/src/App.tsx), [language loading](DoneToday.Web/src/i18n/index.ts) |
 
-Requirements: .NET SDK 10, Node.js 24 with npm, PostgreSQL, and the EF Core 10 CLI. Commands below start from the repository root unless otherwise noted.
+## Architecture
 
-1. Create a PostgreSQL database and configure its connection locally:
+```mermaid
+flowchart LR
+    Browser["Browser: React + TypeScript"]
+    App["Render container: ASP.NET Core / Kestrel"]
+    Static["Built frontend assets"]
+    Services["Controllers + domain services + Identity"]
+    Database[("PostgreSQL")]
+    Email["Brevo email API"]
+    Google["Google OAuth — optional"]
+    Browser -->|HTTPS: pages and API| App
+    App --> Static
+    App --> Services
+    Services -->|EF Core| Database
+    Services --> Email
+    App <-->|Sign-in and explicit linking| Google
+```
 
-   ```bash
-   dotnet restore
-   dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5432;Database=donetoday;Username=YOUR_USER;Password=YOUR_PASSWORD" --project DoneToday
-   ```
+The [Dockerfile](Dockerfile) builds both applications and copies Vite's output to the backend's `wwwroot`. Production serves the UI and API from the same origin. Domain services calculate streaks and progress; controllers enforce ownership and coordinate database writes. See [deployment configuration](docs/deployment.md) and [security controls and limits](docs/security.md).
 
-   Replace the example values with your local database credentials. Keep credentials out of source control.
+## Local setup
 
-2. If the EF CLI is not installed, install a version matching the backend, then apply the migrations:
+Requirements: .NET SDK 10, Node.js 24 with npm, and PostgreSQL. Start in the repository root. Use a dedicated development database; do not point these commands at production.
 
-   ```bash
-   dotnet tool install --global dotnet-ef --version "10.*"
-   dotnet ef database update --project DoneToday
-   ```
+### 1. Configure the database
 
-   Identity infrastructure is being integrated. Development now uses the separate `donetoday_auth` database while keeping the previous database intact. Registration, email confirmation, login and logout are implemented. Habit endpoints use the authenticated user ID. Identity manages account creation in the new database. See [authentication preparation](docs/authentication.md).
+Create a database named `donetoday_auth` with your PostgreSQL tools, then run:
 
-3. Trust the local development certificate and start the API:
+```bash
+dotnet restore
+dotnet user-secrets set "ConnectionStrings:AuthenticationConnection" "Host=localhost;Port=5432;Database=donetoday_auth;Username=YOUR_USER;Password=YOUR_PASSWORD" --project DoneToday
+```
 
-   ```bash
-   dotnet dev-certs https --trust
-   dotnet run --project DoneToday --launch-profile https
-   ```
+The app uses `AuthenticationConnection`. If you retain an old `DefaultConnection`, it must name a different database: [the connection selector](DoneToday/Data/AuthenticationDatabase.cs) rejects reusing the previous demo database.
 
-   API: `https://localhost:7154/api`. Swagger: `https://localhost:7154/swagger`.
+Install the EF Core CLI if needed and apply migrations in Development:
 
-4. In a second terminal, start the frontend:
+```bash
+dotnet tool install --global dotnet-ef --version "10.*"
+dotnet ef database update --project DoneToday -- --environment Development
+```
 
-   ```bash
-   cd DoneToday.Web
-   npm ci
-   npm run dev
-   ```
+### 2. Start the API
 
-   Open the local URL printed by Vite, normally `http://localhost:5173`.
+```bash
+dotnet dev-certs https --trust
+dotnet run --project DoneToday --launch-profile https
+```
 
-The Vite development proxy forwards `/api` requests to `https://localhost:7154`. Start the API with its HTTPS profile. The proxy accepts the local development certificate using `secure: false`; this setting is for local development. A production deployment or `npm run preview` needs its own API routing configuration.
+API: `https://localhost:7154/api`. Development Swagger: `https://localhost:7154/swagger`.
 
-### Checks
+### 3. Start the frontend
+
+In another terminal:
+
+```bash
+cd DoneToday.Web
+npm ci
+npm run dev
+```
+
+Open `https://localhost:5173`. The `predev` script exports the .NET development certificate for Vite; the development proxy forwards `/api` to the API's HTTPS address. See [Vite configuration](DoneToday.Web/vite.config.ts).
+
+Guest access works without an email service. For registration and password recovery, development settings use a local SMTP inbox at `127.0.0.1:1025`. On Windows, start the repository's Mailpit helper in another terminal:
+
+```powershell
+powershell -NoProfile -File tools/start-mailpit.ps1
+```
+
+Read confirmation messages at `http://127.0.0.1:8025`. See [local email setup](docs/authentication.md) for details. Google is optional; it is enabled only when `Authentication:Google:ClientId` and `Authentication:Google:ClientSecret` are supplied through local secrets or environment configuration.
+
+## Tests and checks
+
+[GitHub Actions](.github/workflows/ci.yml) runs backend tests and frontend checks on pushes to `main`, pull requests, and manual runs. The CI badge above links to the results. The workflow does not configure PostgreSQL, so the opt-in database integration tests described below remain skipped.
 
 From the repository root:
 
@@ -92,158 +132,41 @@ dotnet test
 From `DoneToday.Web`:
 
 ```bash
-npm run build
+npm ci
 npm run lint
-npm run test:i18n
-```
-
-Stop the running API before `dotnet test` if Windows reports locked build files. The language tests cover regional codes, preference order, persistence, fallback, catalog completeness, and interpolation variables.
-
-### API overview
-
-| Method        | Route                       | Purpose                                              |
-| ------------- | --------------------------- | ---------------------------------------------------- |
-| GET           | `/api/Today`                | Today's scheduled habits and streaks                 |
-| GET / POST    | `/api/Habits`               | List active habits / create a habit                  |
-| GET / PUT     | `/api/Habits/{id}`          | Read / update a habit                                |
-| GET           | `/api/Habits/{id}/detail`   | Streaks, schedule, and completion dates              |
-| POST / DELETE | `/api/Habits/{id}/complete` | Complete / undo today's completion                   |
-| PATCH         | `/api/Habits/{id}/archive`  | Archive a habit                                      |
-| PATCH         | `/api/Habits/{id}/restore`  | Restore a habit                                      |
-| GET           | `/api/Habits/archived`      | List archived habits                                 |
-| GET           | `/api/Progress/week`        | Weekly totals, daily chart data, and habit breakdown |
-| GET           | `/api/Progress/month`       | Monthly calendar and totals (`year`, `month`)        |
-| POST          | `/api/Habits/order`         | Save the active habit order                          |
-| POST          | `/api/profile/name`         | Update the display name                              |
-| POST          | `/api/profile/time-zone`    | Save the account time zone                           |
-| POST          | `/api/profile/delete`       | Confirm and permanently delete the current account   |
-
-### Current scope
-
-Upcoming optional habit targets preserve individual weekday selection and existing completion statistics, adding manual amounts, corrections and separate weekly/monthly quantity views. Apply the additive `AddHabitGoalsAndProgress` migration before running the updated backend. See [measurable habits](docs/measurable-habits.md).
-
-Version 1.1.1 adds daily motivation in English, Spanish and German: 70 messages selected by the account's local date, including credited excerpts and clearly labeled Atomic Habits-inspired reflections. It also includes illustrated backgrounds, short page transitions and password visibility controls. Update checks run only in production and notify only for newer releases. See [daily motivation](docs/daily-motivation.md) and the [CHANGELOG](CHANGELOG.md).
-
-Version 1 supports email/password authentication with confirmation and recovery, optional authenticator 2FA, Google sign-in and explicit linking, per-account time zone/display name/manual habit order, selectable habit icons, weekly and monthly statistics, and account deletion. Theme and language remain browser preferences. Microsoft sign-in, yearly statistics and configurable habit start/end dates are outside this release.
-
-For frontend structure, editor settings, and adding translations, see [the frontend README](DoneToday.Web/README.md).
-
-## Español
-
-### Versión 1.0.0
-
-La primera entrega agrega orden manual guardado, aviso de completado con Deshacer, calendario mensual, nombre de perfil editable y eliminación permanente desde Settings. El orden se cambia con un control de arrastre (mouse/táctil) o botones accesibles para subir/bajar; Guardar lo aplica en Habits y Today. Los totales mensuales incluyen los hábitos actualmente activos y los días programados hasta el día local del usuario, respetando el historial de días.
-
-`VERSION` es la fuente de versión que leen el frontend y la compilación de .NET; `DoneToday.Web/package.json` y su lockfile tienen la misma versión. Se muestra en Settings. [CHANGELOG](CHANGELOG.md) registra las entregas. Las correcciones pasan a `1.0.x` y las nuevas funciones compatibles a `1.x.0`. Aplicá `AddProfileAndHabitOrder` antes de ejecutar esta versión. Render aplica migraciones pendientes al arrancar. Una etiqueta Git puede identificar la compilación publicada y validada; actualizar el número de versión no publica por sí solo.
-
-Eliminar la cuenta exige sesión autenticada, protección CSRF, el email de la cuenta, contraseña actual para cuentas con contraseña y código del autenticador cuando hay 2FA. Elimina los registros de Identity, hábitos, días programados y completaciones, y cierra la sesión del navegador. Las cuentas solo de Google confirman su email sin crear contraseña local. La acción es irreversible y debe iniciarla y confirmarla el usuario.
-
-DoneToday es una aplicación de hábitos pensada primero para móviles, construida con ASP.NET Core y React. Permite crear rutinas, elegir sus días, completar los hábitos de hoy y seguir las rachas y el progreso semanal.
-
-### Funciones
-
-- Hoy: hábitos programados, completar/deshacer y rachas actual y máxima.
-- Hábitos: crear, editar, consultar finalizaciones, archivar y restaurar.
-- Estadísticas: totales semanales, gráfico diario y desglose por hábito.
-- Configuración: tema oscuro/claro e interfaz en inglés, español o alemán.
-- Detección de idioma: primero la elección guardada, después las preferencias del navegador y, como respaldo, inglés.
-
-Los nombres y las descripciones conservan el texto ingresado por el usuario. El idioma de la interfaz no cambia la programación: las fechas usan la zona horaria IANA guardada por el usuario y la semana empieza el lunes. Detectamos la zona del navegador al iniciar sesión por primera vez; se puede cambiar en Settings y otro dispositivo no la sobrescribe. Los cambios de días se aplican desde mañana en esa zona y conservan el historial anterior. Las marcas de tiempo siguen en UTC. Las cuentas existentes se inicializan al volver a entrar; las fechas de las completaciones anteriores basadas en UTC no se reescriben.
-
-### Tecnologías y repositorio
-
-| Carpeta            | Responsabilidad                                                                        |
-| ------------------ | -------------------------------------------------------------------------------------- |
-| `DoneToday/`       | API ASP.NET Core 10, EF Core, PostgreSQL, migraciones y servicios de dominio           |
-| `DoneToday.Tests/` | Tests xUnit de rachas, programación y progreso                                         |
-| `DoneToday.Web/`   | React 19, TypeScript 6, Vite 8, Tailwind CSS 4, React Router, TanStack Query e i18next |
-
-### Inicio local
-
-Requisitos: .NET SDK 10, Node.js 24 con npm, PostgreSQL y la CLI de EF Core 10. Los comandos parten de la raíz del repositorio, salvo donde se indica otra carpeta.
-
-1. Creá una base de datos PostgreSQL y configurá la conexión local:
-
-   ```bash
-   dotnet restore
-   dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5432;Database=donetoday;Username=YOUR_USER;Password=YOUR_PASSWORD" --project DoneToday
-   ```
-
-   Reemplazá los valores del ejemplo por tus credenciales locales. No guardes credenciales en Git.
-
-2. Si no tenés instalada la CLI de EF, instalá una versión compatible con el backend y aplicá las migraciones:
-
-   ```bash
-   dotnet tool install --global dotnet-ef --version "10.*"
-   dotnet ef database update --project DoneToday
-   ```
-
-   La infraestructura de Identity está en integración. Desarrollo usa la base separada `donetoday_auth` y conserva la anterior. Ya hay registro, confirmación de email, login y logout. Los endpoints de hábitos usan el ID del usuario autenticado. Identity gestiona la creación de cuentas en la base nueva. Consultá [la preparación de autenticación](docs/authentication.md).
-
-3. Confiá en el certificado local de desarrollo e iniciá la API:
-
-   ```bash
-   dotnet dev-certs https --trust
-   dotnet run --project DoneToday --launch-profile https
-   ```
-
-   API: `https://localhost:7154/api`. Swagger: `https://localhost:7154/swagger`.
-
-4. En otra terminal, iniciá el frontend:
-
-   ```bash
-   cd DoneToday.Web
-   npm ci
-   npm run dev
-   ```
-
-   Abrí la URL local que muestra Vite, normalmente `http://localhost:5173`.
-
-El proxy de desarrollo de Vite envía las peticiones `/api` a `https://localhost:7154`. Iniciá la API con el perfil HTTPS. El proxy acepta el certificado local mediante `secure: false`; esa configuración es para desarrollo. Un despliegue en producción o `npm run preview` necesita configurar su propio acceso a la API.
-
-### Verificaciones
-
-Desde la raíz del repositorio:
-
-```bash
-dotnet test
-```
-
-Desde `DoneToday.Web`:
-
-```bash
 npm run build
-npm run lint
 npm run test:i18n
+npm run test:ui
 ```
 
-Si Windows informa que los archivos de compilación están bloqueados, detené la API antes de ejecutar `dotnet test`. Los tests de idioma cubren variantes regionales, orden de preferencias, persistencia, respaldo, integridad de los catálogos y variables de interpolación.
+Backend tests cover scheduling, streaks, account dates, progress, and security behavior. UI tests cover editing, recovery from failed requests, navigation protection, and language formatting; catalog tests check language detection, key completeness, and interpolation variables.
 
-### Resumen de la API
+The PostgreSQL security integration tests are opt-in: without `DONETODAY_SECURITY_TEST_CONNECTION`, they are skipped. Supply a connection to a **disposable local PostgreSQL server**, with database creation privileges, to run them; the harness creates and drops its own test database. See [the integration test harness](DoneToday.Tests/Services/GuestSecurityIntegrationTests.cs). Stop a running local API if Windows reports locked build files.
 
-| Método        | Ruta                        | Función                                                           |
-| ------------- | --------------------------- | ----------------------------------------------------------------- |
-| GET           | `/api/Today`                | Hábitos programados para hoy y rachas                             |
-| GET / POST    | `/api/Habits`               | Listar hábitos activos / crear un hábito                          |
-| GET / PUT     | `/api/Habits/{id}`          | Consultar / editar un hábito                                      |
-| GET           | `/api/Habits/{id}/detail`   | Rachas, programación y fechas de finalización                     |
-| POST / DELETE | `/api/Habits/{id}/complete` | Completar / deshacer la finalización de hoy                       |
-| PATCH         | `/api/Habits/{id}/archive`  | Archivar un hábito                                                |
-| PATCH         | `/api/Habits/{id}/restore`  | Restaurar un hábito                                               |
-| GET           | `/api/Habits/archived`      | Listar hábitos archivados                                         |
-| GET           | `/api/Progress/week`        | Totales semanales, datos del gráfico diario y desglose por hábito |
-| GET           | `/api/Progress/month`       | Calendario y totales mensuales (`year`, `month`)                  |
-| POST          | `/api/Habits/order`         | Guardar el orden de los hábitos activos                           |
-| POST          | `/api/profile/name`         | Actualizar el nombre para mostrar                                 |
-| POST          | `/api/profile/time-zone`    | Guardar la zona horaria de la cuenta                              |
-| POST          | `/api/profile/delete`       | Confirmar y eliminar permanentemente la cuenta actual             |
+## API overview
 
-### Alcance actual
+Habit, profile, and progress routes require an authenticated account, including guest accounts. State-changing requests require a CSRF token: obtain it from `GET /api/auth/csrf`, retain the cookies, and send `X-CSRF-TOKEN`. This table summarizes the main routes; development Swagger exposes request schemas.
 
-Las próximas metas opcionales conservan la selección individual de días y las estadísticas de completado actuales, y suman cantidades manuales, correcciones y vistas de cantidades semanales/mensuales. Aplicá la migración aditiva `AddHabitGoalsAndProgress` antes de ejecutar el backend actualizado. Consultá [hábitos con metas](docs/measurable-habits.md).
+| Method | Route | Purpose |
+| --- | --- | --- |
+| POST | `/api/auth/guest` | Start a guest session |
+| POST | `/api/auth/register`, `/api/auth/confirm-email` | Register and confirm an email account |
+| POST | `/api/auth/login`, `/api/auth/two-factor/login`, `/api/auth/logout` | Sign in, complete 2FA, and sign out |
+| POST | `/api/auth/forgot-password`, `/api/auth/reset-password` | Request and complete password recovery |
+| POST | `/api/auth/guest/register` | Begin conversion of the current guest account |
+| GET | `/api/auth/me`, `/api/auth/csrf` | Read the session and obtain a CSRF token |
+| GET | `/api/Today` | Today's scheduled habits, progress, and streaks |
+| GET / POST | `/api/Habits` | List active habits / create a habit |
+| GET / PUT | `/api/Habits/{id}` | Read / update an owned habit |
+| GET | `/api/Habits/{id}/detail` | Schedule, streaks, and completion dates |
+| POST / DELETE | `/api/Habits/{id}/complete` | Complete / undo today's completion |
+| POST / PUT | `/api/Habits/{id}/progress` | Add an amount / correct today's total |
+| PATCH | `/api/Habits/{id}/archive`, `/api/Habits/{id}/restore` | Archive / restore a habit |
+| GET | `/api/Habits/archived` | List archived habits |
+| POST | `/api/Habits/order` | Save active habit order |
+| GET | `/api/Progress/week`, `/api/Progress/month` | Completion statistics; optional `habitId`, and `year`/`month` for monthly data |
+| GET | `/api/Progress/quantities` | Quantity statistics; optional `habitId`, `year`, and `month` |
+| POST | `/api/profile/name`, `/api/profile/time-zone` | Update the display name / account time zone |
+| POST | `/api/profile/delete` | Verify and permanently delete the current account |
 
-La versión 1.1.1 agrega motivación diaria en inglés, español y alemán: 70 mensajes según la fecha local de la cuenta, con citas atribuidas y reflexiones identificadas como inspiradas en Hábitos atómicos. También incluye fondos ilustrados, transiciones breves y controles para mostrar contraseñas. El aviso de actualización funciona solo en producción y solo para versiones más recientes. Consultá [frase diaria](docs/daily-motivation.md) y el [CHANGELOG](CHANGELOG.md).
-
-La versión 1 admite email/contraseña con confirmación y recuperación, 2FA opcional con autenticador, acceso con Google y vinculación explícita, zona horaria/nombre/orden manual por cuenta, iconos seleccionables, estadísticas semanales y mensuales y eliminación de cuenta. El idioma y el tema siguen siendo preferencias del navegador. Microsoft, estadísticas anuales y fechas de inicio/fin configurables de los hábitos quedan fuera de esta entrega.
-
-Para la estructura del frontend, configuración del editor y nuevas traducciones, consultá [el README del frontend](DoneToday.Web/README.md).
+More detail: [measurable habits](docs/measurable-habits.md), [UX behavior](docs/ux-improvements.md), [frontend guide](DoneToday.Web/README.md). Release history lives in [CHANGELOG.md](CHANGELOG.md).

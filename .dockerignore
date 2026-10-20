@@ -14,3 +14,7 @@
 DoneToday.Tests
 tools
 docs
+
+# Local working files and presentation exports
+/work/
+/entregables/

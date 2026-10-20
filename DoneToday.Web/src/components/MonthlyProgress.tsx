@@ -52,10 +52,7 @@ export default function MonthlyProgress({ habitId }: { habitId?: number }) {
           >
             ←
           </button>
-          <h2
-            className="text-center font-semibold capitalize"
-            aria-live="polite"
-          >
+          <h2 className="text-center font-semibold" aria-live="polite">
             {label}
           </h2>
           <button
@@ -72,7 +69,7 @@ export default function MonthlyProgress({ habitId }: { habitId?: number }) {
       <QuantityProgress habitId={habitId} year={year} month={month} />
       <section className="panel mt-6" aria-label={t('month.title')}>
         <h3 className="text-center font-semibold">
-          {t('month.title')} · <span className="capitalize">{label}</span>
+          {t('month.title')} · <span>{label}</span>
         </h3>
         {progress.isPending ? (
           <p role="status" className="mt-3 text-sm text-muted">

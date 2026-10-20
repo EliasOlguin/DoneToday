@@ -487,3 +487,7 @@ $RECYCLE.BIN/
 
 # Local development tools and captured test emails
 .local/
+
+# Local working files and presentation exports
+/work/
+/entregables/
