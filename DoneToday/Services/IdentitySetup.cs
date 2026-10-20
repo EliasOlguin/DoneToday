@@ -16,7 +16,7 @@ public static class IdentitySetup
         options.Password.RequireNonAlphanumeric = true;
         options.SignIn.RequireConfirmedEmail = true;
         options.Tokens.PasswordResetTokenProvider = "DoneToday.PasswordReset";
-        options.Lockout.MaxFailedAccessAttempts = 5;
+        options.Lockout.MaxFailedAccessAttempts = 20;
         options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
     }
 
@@ -26,6 +26,7 @@ public static class IdentitySetup
         services.AddIdentityCore<User>(Configure)
             .AddRoles<IdentityRole<int>>()
             .AddEntityFrameworkStores<AppDbContext>()
+            .AddUserStore<ProtectedUserStore>()
             .AddSignInManager()
             .AddDefaultTokenProviders()
             .AddTokenProvider<PasswordResetTokenProvider>("DoneToday.PasswordReset");

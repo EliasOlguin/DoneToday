@@ -410,6 +410,229 @@ public class GuestSecurityIntegrationTests
         await browser.Get("/api/auth/me", 401);
     }
 
+    [SecurityPostgresFact]
+    public async Task IdentityTokensAreProtectedBoundToTheirOwnerAndRecoveryCodesRemainSingleUse()
+    {
+        await using var host = await TestHost.Start();
+        var account = await host.Seed("two-factor@example.test");
+        var other = await host.Seed("other-two-factor@example.test");
+        using var scope = host.App.Services.CreateScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var user = (await users.FindByIdAsync(account.Id.ToString()))!;
+        Assert.True((await users.ResetAuthenticatorKeyAsync(user)).Succeeded);
+        var key = await users.GetAuthenticatorKeyAsync(user);
+        var codes = (await users.GenerateNewTwoFactorRecoveryCodesAsync(user, 3))!.ToArray();
+        var stored = await db.UserTokens.AsNoTracking().Where(token => token.UserId == user.Id).ToListAsync();
+        Assert.All(stored, token => Assert.StartsWith("protected:v1:", token.Value));
+        Assert.DoesNotContain(stored, token => token.Value!.Contains(key!) || codes.Any(code => token.Value.Contains(code)));
+        Assert.Equal(3, await users.CountRecoveryCodesAsync(user));
+        Assert.True((await users.RedeemTwoFactorRecoveryCodeAsync(user, codes[0])).Succeeded);
+        Assert.False((await users.RedeemTwoFactorRecoveryCodeAsync(user, codes[0])).Succeeded);
+        Assert.Equal(2, await users.CountRecoveryCodesAsync(user));
+        var rawKey = stored.Single(token => token.Name == "AuthenticatorKey").Value!;
+        db.UserTokens.Add(new IdentityUserToken<int> { UserId = other.Id, LoginProvider = "[AspNetUserStore]", Name = "AuthenticatorKey", Value = rawKey });
+        await db.SaveChangesAsync();
+        var otherUser = (await users.FindByIdAsync(other.Id.ToString()))!;
+        await Assert.ThrowsAsync<System.Security.Cryptography.CryptographicException>(() => users.GetAuthenticatorKeyAsync(otherUser));
+    }
+
+    [SecurityPostgresFact]
+    public async Task LegacyTokensAreEncryptedIdempotentlyWithoutChangingTheirValues()
+    {
+        await using var host = await TestHost.Start();
+        var account = await host.Seed("legacy-two-factor@example.test");
+        using var scope = host.App.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.UserTokens.AddRange(new IdentityUserToken<int> { UserId = account.Id, LoginProvider = "[AspNetUserStore]", Name = "AuthenticatorKey", Value = "LEGACYKEY" },
+            new IdentityUserToken<int> { UserId = account.Id, LoginProvider = "[AspNetUserStore]", Name = "RecoveryCodes", Value = "first;second" });
+        await db.SaveChangesAsync();
+        var store = (ProtectedUserStore)scope.ServiceProvider.GetRequiredService<IUserStore<User>>();
+        await store.ProtectExistingAsync();
+        var first = await db.UserTokens.AsNoTracking().Select(token => token.Value).ToArrayAsync();
+        await store.ProtectExistingAsync();
+        Assert.Equal(first, await db.UserTokens.AsNoTracking().Select(token => token.Value).ToArrayAsync());
+        db.ChangeTracker.Clear();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        var user = (await users.FindByIdAsync(account.Id.ToString()))!;
+        Assert.Equal("LEGACYKEY", await users.GetAuthenticatorKeyAsync(user));
+        Assert.True((await users.RedeemTwoFactorRecoveryCodeAsync(user, "first")).Succeeded);
+        Assert.False((await users.RedeemTwoFactorRecoveryCodeAsync(user, "first")).Succeeded);
+    }
+
+    [SecurityPostgresFact]
+    public async Task OneIpCannotLockTheAccountButDistributedFailuresStillDo()
+    {
+        await using var host = await TestHost.Start();
+        var account = await host.Seed("login-victim@example.test");
+        var attacker = host.Browser(ip: "192.0.2.1");
+        for (var i = 0; i < 5; i++) await attacker.Post("/api/auth/login", new { email = account.Email, password = "wrong-password" }, 401);
+        await attacker.Post("/api/auth/login", new { email = account.Email, password = Password }, 401);
+        var owner = host.Browser(ip: "192.0.2.2");
+        await owner.Post("/api/auth/login", new { email = account.Email, password = Password }, 200);
+        await owner.Me();
+        for (var ip = 3; ip <= 6; ip++)
+        {
+            var browser = host.Browser(ip: $"192.0.2.{ip}");
+            for (var i = 0; i < 5; i++) await browser.Post("/api/auth/login", new { email = account.Email, password = "wrong-password" }, 401);
+        }
+        using var scope = host.App.Services.CreateScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        Assert.True(await users.IsLockedOutAsync((await users.FindByIdAsync(account.Id.ToString()))!));
+        await host.Browser(ip: "192.0.2.7").Post("/api/auth/login", new { email = account.Email, password = Password }, 401);
+    }
+
+    [SecurityPostgresFact]
+    public async Task TwoFactorLoginUsesEncryptedTokensAndDoesNotResetTheIpBudgetAfterOnlyAPassword()
+    {
+        await using var host = await TestHost.Start();
+        var account = await host.Seed("mfa-login@example.test");
+        string[] codes;
+        using (var scope = host.App.Services.CreateScope())
+        {
+            var users = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+            var user = (await users.FindByIdAsync(account.Id.ToString()))!;
+            Assert.True((await users.SetAuthenticationTokenAsync(user, "[AspNetUserStore]", "AuthenticatorKey", "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ")).Succeeded);
+            Assert.True((await users.SetTwoFactorEnabledAsync(user, true)).Succeeded);
+            codes = (await users.GenerateNewTwoFactorRecoveryCodesAsync(user, 3))!.ToArray();
+        }
+        var attacker = host.Browser(ip: "192.0.2.1");
+        Assert.Contains("requiresTwoFactor", await attacker.Post("/api/auth/login", new { email = account.Email, password = Password }, 200));
+        for (var i = 0; i < 4; i++) await attacker.Post("/api/auth/two-factor/login", new { code = "invalid" }, 401);
+        await attacker.Post("/api/auth/login", new { email = account.Email, password = Password }, 401);
+        var owner = host.Browser(ip: "192.0.2.2");
+        await owner.Post("/api/auth/login", new { email = account.Email, password = Password }, 200);
+        var counter = new byte[8];
+        System.Buffers.Binary.BinaryPrimitives.WriteInt64BigEndian(counter, DateTimeOffset.UtcNow.ToUnixTimeSeconds() / 30);
+        var hash = System.Security.Cryptography.HMACSHA1.HashData(System.Text.Encoding.ASCII.GetBytes("12345678901234567890"), counter);
+        var offset = hash[^1] & 15;
+        var code = ((System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(hash.AsSpan(offset, 4)) & int.MaxValue) % 1_000_000).ToString("D6");
+        await owner.Post("/api/auth/two-factor/login", new { code }, 200);
+        await owner.Me();
+        var recovery = host.Browser(ip: "192.0.2.3");
+        await recovery.Post("/api/auth/login", new { email = account.Email, password = Password }, 200);
+        await recovery.Post("/api/auth/two-factor/login", new { code = codes[0], recoveryCode = true }, 200);
+        await recovery.Me();
+        var replay = host.Browser(ip: "192.0.2.4");
+        await replay.Post("/api/auth/login", new { email = account.Email, password = Password }, 200);
+        await replay.Post("/api/auth/two-factor/login", new { code = codes[0], recoveryCode = true }, 401);
+    }
+
+    [SecurityPostgresFact]
+    public async Task RuntimeRoleSupportsIdentityAndHabitsButCannotChangeTheSchema()
+    {
+        var host = await TestHost.Start();
+        var role = "donetoday_runtime_" + Guid.NewGuid().ToString("N");
+        var created = false;
+        try
+        {
+            using var scope = host.App.Services.CreateScope();
+            var owner = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            // The identifier is generated locally from a fixed prefix and a GUID, never request input.
+            await using (var connection = new NpgsqlConnection(owner.Database.GetConnectionString()))
+            {
+                await connection.OpenAsync();
+                await using var command = new NpgsqlCommand($"CREATE ROLE \"{role}\" LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT", connection);
+                await command.ExecuteNonQueryAsync();
+            }
+            created = true;
+            var script = await File.ReadAllTextAsync(Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "docs", "sql", "runtime-role.sql")));
+            script = string.Join('\n', script.Split('\n').Where(line => !line.StartsWith('\\')))
+                .Replace(":\"runtime_role\"", $"\"{role}\"").Replace(":'runtime_role'", $"'{role}'").Replace(":\"DBNAME\"", $"\"{owner.Database.GetDbConnection().Database}\"");
+            await owner.Database.ExecuteSqlRawAsync(script);
+            var settings = new NpgsqlConnectionStringBuilder(owner.Database.GetConnectionString()) { Username = role, Password = "", Pooling = false };
+            var services = new ServiceCollection();
+            services.AddLogging();
+            services.AddDataProtection().UseEphemeralDataProtectionProvider();
+            services.AddDbContext<AppDbContext>(options => options.UseNpgsql(settings.ConnectionString));
+            services.AddDoneTodayIdentity();
+            await using var provider = services.BuildServiceProvider();
+            await using var runtimeScope = provider.CreateAsyncScope();
+            var users = runtimeScope.ServiceProvider.GetRequiredService<UserManager<User>>();
+            var user = new User { UserName = "runtime@example.test", Email = "runtime@example.test", EmailConfirmed = true };
+            Assert.True((await users.CreateAsync(user, Password)).Succeeded);
+            Assert.True((await users.ResetAuthenticatorKeyAsync(user)).Succeeded);
+            Assert.NotNull(await users.GetAuthenticatorKeyAsync(user));
+            var runtime = runtimeScope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var habit = new Habit { UserId = user.Id, Name = "Runtime habit" };
+            runtime.Habits.Add(habit);
+            await runtime.SaveChangesAsync();
+            habit.Name = "Updated";
+            await runtime.SaveChangesAsync();
+            Assert.Equal("Updated", (await runtime.Habits.SingleAsync()).Name);
+            runtime.Habits.Remove(habit);
+            await runtime.SaveChangesAsync();
+            runtime.DataProtectionKeys.Add(new() { FriendlyName = "test", Xml = "<test />" });
+            await runtime.SaveChangesAsync();
+            Assert.NotEmpty(await runtime.Database.GetAppliedMigrationsAsync());
+            foreach (var sql in new[] { "CREATE TABLE public.forbidden (id int)", "ALTER TABLE public.\"Users\" ADD COLUMN forbidden int", "DROP TABLE public.\"Users\"", "DELETE FROM public.\"__EFMigrationsHistory\"" })
+            {
+                var error = await Assert.ThrowsAsync<PostgresException>(() => runtime.Database.ExecuteSqlRawAsync(sql));
+                Assert.Equal(PostgresErrorCodes.InsufficientPrivilege, error.SqlState);
+            }
+            await owner.Database.ExecuteSqlRawAsync("CREATE TABLE public.runtime_future_test (id serial PRIMARY KEY)");
+            await runtime.Database.ExecuteSqlRawAsync("INSERT INTO public.runtime_future_test DEFAULT VALUES");
+            await runtime.Database.ExecuteSqlRawAsync("DELETE FROM public.runtime_future_test");
+        }
+        finally
+        {
+            await host.DisposeAsync();
+            if (created)
+            {
+                await using var admin = new NpgsqlConnection(Environment.GetEnvironmentVariable("DONETODAY_SECURITY_TEST_CONNECTION"));
+                await admin.OpenAsync();
+                await using var drop = new NpgsqlCommand($"DROP ROLE \"{role}\"", admin);
+                await drop.ExecuteNonQueryAsync();
+            }
+        }
+    }
+
+    [SecurityPostgresFact]
+    public async Task MigrationCommandExitsWithoutServingHttpAndProtectedTokensSurviveRestart()
+    {
+        await using var host = await TestHost.Start();
+        var account = await host.Seed("migration-two-factor@example.test");
+        using var scope = host.App.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.UserTokens.Add(new IdentityUserToken<int> { UserId = account.Id, LoginProvider = "[AspNetUserStore]", Name = "AuthenticatorKey", Value = "LEGACYKEY" });
+        await db.SaveChangesAsync();
+        using var rsa = System.Security.Cryptography.RSA.Create(2048);
+        var request = new System.Security.Cryptography.X509Certificates.CertificateRequest("CN=LocalSecurityTest", rsa,
+            System.Security.Cryptography.HashAlgorithmName.SHA256, System.Security.Cryptography.RSASignaturePadding.Pkcs1);
+        using var certificate = request.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-1), DateTimeOffset.UtcNow.AddDays(1));
+        var repository = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
+        for (var run = 0; run < 2; run++)
+        {
+            var start = new System.Diagnostics.ProcessStartInfo("dotnet") { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true, CreateNoWindow = true, WorkingDirectory = Path.Combine(repository, "DoneToday") };
+            start.ArgumentList.Add(Path.Combine(repository, "DoneToday", "bin", new DirectoryInfo(AppContext.BaseDirectory).Parent!.Name, "net10.0", "DoneToday.dll"));
+            start.ArgumentList.Add("--migrate-only");
+            start.Environment["ASPNETCORE_ENVIRONMENT"] = "Production";
+            start.Environment["DOTNET_ENVIRONMENT"] = "Production";
+            start.Environment["ConnectionStrings__AuthenticationConnection"] = db.Database.GetConnectionString();
+            start.Environment["Authentication__FrontendUrl"] = "https://localhost:5173";
+            start.Environment["DataProtection__CertificateBase64"] = Convert.ToBase64String(certificate.Export(System.Security.Cryptography.X509Certificates.X509ContentType.Pfx));
+            start.Environment["Logging__LogLevel__Default"] = "None";
+            start.Environment["Email__Provider"] = "Smtp";
+            using var process = System.Diagnostics.Process.Start(start)!;
+            var output = process.StandardOutput.ReadToEndAsync();
+            var errors = process.StandardError.ReadToEndAsync();
+            try { await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(45)); }
+            catch { process.Kill(true); throw; }
+            Assert.Equal(0, process.ExitCode);
+            Assert.DoesNotContain("Now listening", await output);
+            Assert.Empty(await errors);
+        }
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddDbContext<AppDbContext>(options => options.UseNpgsql(db.Database.GetConnectionString()));
+        services.AddDataProtection().SetApplicationName("DoneToday").PersistKeysToDbContext<AppDbContext>().ProtectKeysWithCertificate(certificate);
+        services.AddDoneTodayIdentity();
+        await using var provider = services.BuildServiceProvider();
+        await using var restarted = provider.CreateAsyncScope();
+        var users = restarted.ServiceProvider.GetRequiredService<UserManager<User>>();
+        Assert.Equal("LEGACYKEY", await users.GetAuthenticatorKeyAsync((await users.FindByIdAsync(account.Id.ToString()))!));
+    }
+
     private sealed class TestClock : TimeProvider
     {
         public DateTimeOffset Now = DateTimeOffset.UtcNow;
@@ -427,7 +650,7 @@ public class GuestSecurityIntegrationTests
             return new() { ["userId"] = query["userId"].ToString(), ["code"] = query["code"].ToString() };
         }
     }
-    private sealed class Browser(TestHost host, string? initialCookie = null)
+    private sealed class Browser(TestHost host, string? initialCookie = null, string? ip = null)
     {
         private readonly CookieContainer cookies = new();
         private readonly Uri cookieOrigin = new("https://localhost/api/auth/");
@@ -435,6 +658,7 @@ public class GuestSecurityIntegrationTests
         public string Cookie => string.IsNullOrEmpty(initialCookie) ? cookies.GetCookieHeader(cookieOrigin) : initialCookie;
         private async Task<HttpResponseMessage> Send(HttpRequestMessage request, int expected)
         {
+            if (ip is not null) request.Headers.Add("X-Test-IP", ip);
             if (!string.IsNullOrEmpty(Cookie)) request.Headers.Add("Cookie", Cookie);
             var response = await client.SendAsync(request);
             if (response.Headers.TryGetValues("Set-Cookie", out var headers))
@@ -485,7 +709,7 @@ public class GuestSecurityIntegrationTests
         private string adminConnection = "";
         private string databaseName = "";
         private string connection = "";
-        public Browser Browser(string? cookie = null) => new(this, cookie);
+        public Browser Browser(string? cookie = null, string? ip = null) => new(this, cookie, ip);
         public async Task<User> Seed(string email, bool confirmed = true)
         {
             using var scope = App.Services.CreateScope();
@@ -531,6 +755,10 @@ public class GuestSecurityIntegrationTests
             });
             builder.Services.AddDoneTodayGoogle(builder.Configuration);
             host.App = builder.Build();
+            host.App.Use((ctx, next) => {
+                if (ctx.Request.Headers.TryGetValue("X-Test-IP", out var ip)) ctx.Connection.RemoteIpAddress = IPAddress.Parse(ip.ToString());
+                return next(ctx);
+            });
             host.App.Use((ctx, next) => host.App.Services.GetRequiredService<EarlyRequestLimiter>().Invoke(ctx, next));
             host.App.UseAuthentication();
             host.App.UseRateLimiter();

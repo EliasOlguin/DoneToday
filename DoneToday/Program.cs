@@ -56,11 +56,16 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 });
 
 var app = builder.Build();
-if (builder.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
+var migrateOnly = args.Contains("--migrate-only", StringComparer.Ordinal);
+if (migrateOnly || builder.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
 {
     await using var scope = app.Services.CreateAsyncScope();
     await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.MigrateAsync();
 }
+
+await using (var scope = app.Services.CreateAsyncScope())
+    await ((ProtectedUserStore)scope.ServiceProvider.GetRequiredService<IUserStore<User>>()).ProtectExistingAsync();
+if (migrateOnly) return;
 
 if (app.Environment.IsDevelopment())
 {

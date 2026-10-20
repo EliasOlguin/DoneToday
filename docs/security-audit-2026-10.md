@@ -10,10 +10,10 @@ Read-only review of the code at `f96d9a8` (main, clean tree) and of the public r
 | 2 | Medium | Sign-up sends unlimited emails to different recipients and can drain the email provider quota | Fixed locally, 2026-10-20 |
 | 3 | Medium | Unconfirmed sign-ups permanently squat an email address, including blocking Google sign-up | Fixed locally, 2026-10-20 |
 | 4 | Low | Sign-up reveals whether an email has an account (password-check order) | Fixed locally, 2026-10-20 |
-| 5 | Low | TOTP secrets and recovery codes are stored in plain text | Open — deferred |
-| 6 | Low | Anyone who knows an email can lock that account out for 15 minutes, again and again | Open — deferred |
-| 7 | Info | Trust in the forwarded client IP has not been verified on Render | Open — deferred |
-| 8 | Info | The runtime database role also runs migrations | Open — deferred |
+| 5 | Low | TOTP secrets and recovery codes are stored in plain text | Fixed locally, 2026-10-20 |
+| 6 | Low | Anyone who knows an email can lock that account out for 15 minutes, again and again | Mitigated locally; distributed lockout remains |
+| 7 | Info | Trust in the forwarded client IP has not been verified on Render | Local tests added; Render verification pending |
+| 8 | Info | The runtime database role also runs migrations | Separation prepared; Neon/Render setup pending |
 
 ---
 
@@ -86,6 +86,8 @@ These two changes keep the 2026-10-19 protection, where a click alone never acti
 
 ## 5. [Low] TOTP secrets and recovery codes are stored in plain text
 
+**Follow-up:** `ProtectedUserStore` encrypts authenticator keys and recovery-code lists using the existing Data Protection provider, with separate purposes per user and token name. Before accepting HTTP traffic (also in `--migrate-only`), legacy plaintext rows are conditionally converted without changing values or schema. Recovery codes remain single-use. Tests cover legacy conversion, replay, cross-account ciphertext rejection, real TOTP/recovery HTTP login, and persistent certificate-protected keys across process restarts. Keep the certificate and key ring; losing them makes these secrets unrecoverable. Old application versions cannot read the encrypted format: stop old instances before this rollout and do not roll back the binary alone.
+
 **Where:** this is ASP.NET Identity's default store, used through `IdentitySetup.cs:26-31`. The authenticator key and the recovery codes (joined with `;`) are written to `AspNetUserTokens` without encryption.
 
 **Exploit:** whoever can read the database can generate valid TOTP codes and use the recovery codes for every 2FA user. That could be a leaked Neon connection string, a backup or branch, or a support export. Combined with offline cracking of a weak password hash, this logs into the account and defeats 2FA, which exists for exactly that case.
@@ -94,6 +96,8 @@ These two changes keep the 2026-10-19 protection, where a click alone never acti
 
 ## 6. [Low] Anyone who knows an email can lock that account out for 15 minutes, again and again
 
+**Follow-up:** a shared password/second-factor budget reserves at most five attempts per IP/account for 15 minutes, before verification, and resets only after complete authentication. One IP can no longer trigger the account-wide lockout by repeatedly guessing. The Identity fallback is now 20 failures across IPs for 15 minutes; the separate five-failure sensitive-action protection remains. Concurrent/scoping/expiry tests and HTTP tests cover both layers and MFA. **Residual risk:** distributed attackers can still reach the fallback threshold. Counters are in memory and restart/multi-instance limits remain; this is mitigation, not elimination of targeted denial of service.
+
 **Where:** `AuthController.cs:147-148` (`lockoutOnFailure: true`) and `IdentitySetup.cs:19-20` (5 failures, 15 minutes).
 
 **Exploit:** five wrong passwords for `victim@…` every 15 minutes keep the real user locked out for as long as the script runs. The per-IP limit does not help, because five requests is far below it.
@@ -101,6 +105,8 @@ These two changes keep the 2026-10-19 protection, where a click alone never acti
 **Fix:** this is the usual trade-off of Identity lockout, and it is acceptable for a demo. If it becomes a problem, add a per-IP+account failure counter in front of the account-wide lockout, or a short escalating delay instead of a hard block. Keep the per-account cap high (for example 20) as the last line of defence against distributed guessing.
 
 ## 7. [Info] Trust in the forwarded client IP has not been verified on Render
+
+**Follow-up — still pending on Render:** `Forwarding:KnownProxies` optionally restricts trusted proxy IPs. Loopback HTTP tests prove that only the final forwarded entry is consumed from a configured trusted proxy and an untrusted peer cannot override the client IP. The default single-ingress Render assumption is unchanged; these tests do not establish what Render actually appends. The deployment guide describes the required own-request comparison before marking this finding resolved. No production request, diagnostic logging or configuration was changed.
 
 **Where:** `DoneToday/Services/ProductionHosting.cs:18-25` (`KnownProxies`/`KnownIPNetworks` cleared, `ForwardLimit = 1`).
 
@@ -112,6 +118,8 @@ These two changes keep the 2026-10-19 protection, where a click alone never acti
 
 ## 8. [Info] The runtime database role also runs migrations
 
+**Follow-up — local preparation only:** `--migrate-only` applies schema migrations and token protection, then exits without serving HTTP. The Render blueprint disables startup schema migrations. `docs/sql/runtime-role.sql` grants a separate pre-created runtime role DML/sequence access, keeps migration history read-only, and rejects administrative/schema-owner roles. Disposable PostgreSQL tests prove Identity/habit/key-ring writes work and CREATE/ALTER/DROP/history writes fail, including grants for future owner-created tables. **Pending:** create and verify the actual restricted Neon role, run the owner command separately, and configure Render with the runtime connection. Existing production privileges have not changed.
+
 **Where:** `render.yaml:15-16` (`Database__MigrateOnStartup=true`) and `Program.cs:59-63`.
 
 **Risk:** the role the app uses on every request has schema-owner (DDL) rights. No SQL injection was found (see below), so this only enlarges the damage of some future bug.
@@ -122,7 +130,7 @@ These two changes keep the 2026-10-19 protection, where a click alone never acti
 
 ## Checked and fine
 
-- **Password policy:** at least 12 characters with upper, lower, digit and symbol (`IdentitySetup.cs:12-16`), stored as Identity PBKDF2 hashes. Login, reset and 2FA login share 20/min per IP; registration has its own 5/hour IP policy after this follow-up. TOTP failures at login count toward lockout.
+- **Password policy:** at least 12 characters with upper, lower, digit and symbol (`IdentitySetup.cs:12-16`), stored as Identity PBKDF2 hashes. Login, reset and 2FA login share 20/min per IP; registration has its own 5/hour IP policy after this follow-up. TOTP failures at login count toward lockout. The second follow-up adds the five-attempt IP/account gate and raises the distributed fallback to 20 failures.
 - **Email confirmation:** required to sign in (`IdentitySetup.cs:17`). Confirming needs the token and the chosen password, and rotates the security stamp.
 - **Password reset:** a dedicated Data Protection provider issues tokens valid for 1 hour. They are tied to the security stamp, so they work only once in practice. A reset revokes all sessions, and `forgot-password` gives the same response for every address.
 - **Google sign-in:** uses correlation and state cookies, and requires `email_verified`. It never merges accounts by matching email. Linking requires a confirmed email plus password and 2FA, and the challenge is tied to the user and stamp and expires in 5 minutes. The callback builds redirects only from the configured HTTPS `FrontendUrl`, so there is no open redirect. Tokens are not saved (`SaveTokens = false`).
@@ -174,4 +182,6 @@ Findings #1–#4 are fixed in the local changes; production has not been changed
 
 Verification: `dotnet test DoneToday.Tests/DoneToday.Tests.csproj -c Release` with the disposable loopback PostgreSQL connection: **144 passed, 0 failed, 0 skipped**. The dependency review also updates Vite to 8.3.3 for GHSA-698v-4r3x-3vcv (Windows development-server editor launch). `npm test` runs the existing Node and UI suites. Frontend build, lint and tests are checked for this toolchain update; frontend application behavior is unchanged.
 
-Still open, deliberately outside this follow-up: **#5** encryption of stored TOTP/recovery material; **#6** targeted account lockout abuse; **#7** validation of Render forwarded client IPs; **#8** separation of migration and runtime database privileges. The in-memory budget's restart/multi-instance limits and residual response timing are also documented limitations, not claims of complete abuse prevention.
+A second local follow-up implements #5, mitigates #6, and prepares #7–#8 without changing production. Render forwarded-IP verification and the real Neon/Render role switch remain open. Distributed lockout, in-memory counter resets/multiple instances and residual response timing remain limitations. See the per-finding status above and the deployment guide.
+
+Second follow-up verification: **153 passed, 0 failed, 0 skipped** with disposable loopback PostgreSQL, including migration-only process restarts, real TOTP/recovery login, trusted/untrusted proxy HTTP handling and runtime-role DML/DDL checks. Production operations for #7–#8 remain pending. No schema migration or new dependency was added.

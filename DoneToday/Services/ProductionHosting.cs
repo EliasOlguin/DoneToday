@@ -15,14 +15,7 @@ public static class ProductionHosting
             !string.IsNullOrWhiteSpace(renderUrl)) builder.Configuration["Authentication:FrontendUrl"] = renderUrl;
         var frontend = GoogleAuthentication.Frontend(builder.Configuration);
         builder.Configuration["AllowedHosts"] = frontend.Host;
-        builder.Services.Configure<ForwardedHeadersOptions>(options =>
-        {
-            options.ForwardedHeaders = ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedFor;
-            options.ForwardLimit = 1;
-            // Render is the only ingress to the container; it terminates public TLS.
-            options.KnownIPNetworks.Clear();
-            options.KnownProxies.Clear();
-        });
+        builder.Services.Configure<ForwardedHeadersOptions>(options => ConfigureForwarding(options, builder.Configuration));
         var encodedCertificate = builder.Configuration["DataProtection:CertificateBase64"];
         if (string.IsNullOrWhiteSpace(encodedCertificate))
             throw new InvalidOperationException("Configure DataProtection:CertificateBase64 for production.");
@@ -31,5 +24,17 @@ public static class ProductionHosting
         if (!certificate.HasPrivateKey) throw new InvalidOperationException("The Data Protection certificate requires its private key.");
         builder.Services.AddDataProtection().SetApplicationName("DoneToday")
             .PersistKeysToDbContext<AppDbContext>().ProtectKeysWithCertificate(certificate);
+    }
+
+    public static void ConfigureForwarding(ForwardedHeadersOptions options, IConfiguration configuration)
+    {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedFor;
+        options.ForwardLimit = 1;
+        options.KnownIPNetworks.Clear();
+        options.KnownProxies.Clear();
+        // With no explicit proxy list, this assumes Render is the only ingress.
+        // Verify Render appends the actual client IP before relying on per-IP limits.
+        foreach (var proxy in configuration.GetSection("Forwarding:KnownProxies").Get<string[]>() ?? [])
+            options.KnownProxies.Add(System.Net.IPAddress.Parse(proxy));
     }
 }

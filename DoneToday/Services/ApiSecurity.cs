@@ -19,6 +19,7 @@ public static class ApiSecurity
         services.AddSingleton<DoneToday.Api.Services.Email.RecipientEmailThrottle>();
         services.AddSingleton<DoneToday.Api.Services.Email.DailyEmailBudget>();
         services.AddSingleton<ReverificationAttempts>();
+        services.AddSingleton<LoginAttempts>();
         services.AddScoped<SensitiveActionVerifier>();
         services.AddSingleton<DeleteAccountVerification>();
         services.AddRateLimiter(options =>

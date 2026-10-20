@@ -120,6 +120,25 @@ public class AuthenticationSecurityTests
         Assert.Equal(200, health.Response.StatusCode);
     }
 
+    [Fact]
+    public async Task LoginAttemptsAreAtomicScopedExpireAndResetOnlyExplicitly()
+    {
+        using var cache = new MemoryCache(new MemoryCacheOptions());
+        var clock = new TestClock();
+        var attempts = new LoginAttempts(cache, clock);
+        var results = await Task.WhenAll(Enumerable.Range(0, 30).Select(_ => Task.Run(() => attempts.TryBegin(12, "192.0.2.1"))));
+        Assert.Equal(5, results.Count(result => result));
+        Assert.True(attempts.TryBegin(12, "192.0.2.2"));
+        Assert.True(attempts.TryBegin(13, "192.0.2.1"));
+        clock.Now = clock.Now.AddMinutes(14);
+        Assert.False(attempts.TryBegin(12, "192.0.2.1"));
+        clock.Now = clock.Now.AddMinutes(1);
+        Assert.True(attempts.TryBegin(12, "192.0.2.1"));
+        attempts.Reset(12, "192.0.2.1");
+        for (var i = 0; i < 5; i++) Assert.True(attempts.TryBegin(12, "192.0.2.1"));
+        Assert.False(attempts.TryBegin(12, "192.0.2.1"));
+    }
+
     private sealed class TestClock : TimeProvider
     {
         public DateTimeOffset Now = DateTimeOffset.UtcNow;

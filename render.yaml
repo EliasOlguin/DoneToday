@@ -13,7 +13,7 @@ services:
       - key: ASPNETCORE_HTTP_PORTS
         value: "8080"
       - key: Database__MigrateOnStartup
-        value: "true"
+        value: "false"
       - key: ConnectionStrings__AuthenticationConnection
         sync: false
       - key: DataProtection__CertificateBase64

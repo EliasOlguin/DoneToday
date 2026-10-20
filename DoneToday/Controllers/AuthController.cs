@@ -18,7 +18,7 @@ namespace DoneToday.Api.Controllers;
 [Route("api/auth")]
 public class AuthController(UserManager<User> users, SignInManager<User> signIn, IEmailSender<User> emailSender,
     IConfiguration configuration, IHostEnvironment environment, RecipientEmailThrottle emailThrottle, DoneToday.Api.Data.AppDbContext database,
-    GuestRegistration guestRegistration, SensitiveActionVerifier verification, ILogger<AuthController> logger, DailyEmailBudget sendBudget) : ControllerBase
+    GuestRegistration guestRegistration, SensitiveActionVerifier verification, ILogger<AuthController> logger, DailyEmailBudget sendBudget, LoginAttempts loginAttempts) : ControllerBase
 {
     [HttpPost("guest")]
     [EnableRateLimiting("guest")]
@@ -151,7 +151,8 @@ public class AuthController(UserManager<User> users, SignInManager<User> signIn,
     public async Task<IActionResult> Login(LoginRequest request)
     {
         var user = await users.FindByEmailAsync(request.Email.Trim());
-        if (user is null) return Unauthorized();
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        if (user is null || !loginAttempts.TryBegin(user.Id, ip)) return Unauthorized();
         var result = await signIn.PasswordSignInAsync(user, request.Password,
             isPersistent: true, lockoutOnFailure: true);
         if (result.RequiresTwoFactor)
@@ -160,6 +161,7 @@ public class AuthController(UserManager<User> users, SignInManager<User> signIn,
             return Ok(new { requiresTwoFactor = true });
         }
         if (!result.Succeeded) return Unauthorized();
+        loginAttempts.Reset(user.Id, ip);
         return Ok();
     }
 
@@ -181,14 +183,17 @@ public class AuthController(UserManager<User> users, SignInManager<User> signIn,
     public async Task<IActionResult> TwoFactorLogin(TwoFactorLoginRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Code)) return BadRequest();
-        var recoveryUser = request.RecoveryCode ? await signIn.GetTwoFactorAuthenticationUserAsync() : null;
+        var recoveryUser = await signIn.GetTwoFactorAuthenticationUserAsync();
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        if (recoveryUser is null || !loginAttempts.TryBegin(recoveryUser.Id, ip)) return Unauthorized();
         var result = request.RecoveryCode
             ? await signIn.TwoFactorRecoveryCodeSignInAsync(request.Code.Trim())
             : await signIn.TwoFactorAuthenticatorSignInAsync(request.Code.Replace(" ", "").Replace("-", ""),
                 isPersistent: true, rememberClient: false);
-        if (result.Succeeded && recoveryUser is not null)
+        if (result.Succeeded && request.RecoveryCode)
             await signIn.SignInWithClaimsAsync(recoveryUser, isPersistent: true,
                 [new System.Security.Claims.Claim("amr", "mfa")]);
+        if (result.Succeeded) loginAttempts.Reset(recoveryUser.Id, ip);
         return result.Succeeded ? Ok() : Unauthorized();
     }
 

@@ -2,6 +2,8 @@
 
 ## 1.2.3 — Unreleased / Sin publicar
 
+- Encrypt authenticator secrets and recovery codes with the existing protected key ring, converting legacy rows before serving requests; limit login attempts per IP and account before the distributed-failure lockout. / Cifra secretos de autenticación y códigos de recuperación con las claves protegidas existentes, convierte filas anteriores antes de atender peticiones y limita intentos por IP y cuenta antes del bloqueo por fallos distribuidos.
+- Provide a migration-only command and restricted database-role grants; disable startup schema migrations in the Render blueprint. / Agrega un comando exclusivo de migración y permisos para un rol restringido; desactiva migraciones de esquema al arrancar en el blueprint de Render.
 - Update Vite to 8.3.3 to fix the Windows development-server launch-editor vulnerability. / Actualiza Vite a 8.3.3 para corregir la vulnerabilidad de apertura del editor en el servidor de desarrollo de Windows.
 
 - Reclaim empty guest slots at capacity and clean up empty guests after 24 hours while retaining guests with habits for 120 days. / Recupera plazas de invitados vacíos al alcanzar capacidad y los limpia tras 24 horas, conservando 120 días a quienes tienen hábitos.
