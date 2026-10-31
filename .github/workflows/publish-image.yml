@@ -1,0 +1,42 @@
+name: Publish image
+
+# Runs only after CI succeeds on a push to main, so a broken commit never ships.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-image
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Build and push to GHCR
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE: ghcr.io/eliasolguin/donetoday
+      SHA: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - name: Check out the tested commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+      - name: Build image
+        run: docker build --pull --label "org.opencontainers.image.source=https://github.com/EliasOlguin/DoneToday" --label "org.opencontainers.image.revision=$SHA" -t "$IMAGE:$SHA" -t "$IMAGE:main" .
+      - name: Push image
+        run: |
+          docker push "$IMAGE:$SHA"
+          docker push "$IMAGE:main"
