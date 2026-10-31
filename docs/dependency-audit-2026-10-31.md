@@ -1,5 +1,13 @@
 # Auditoría de dependencias y despliegue — 2026-10-31
 
+## Estado tras la corrección adicional
+
+Las 12 alertas de desarrollo descritas en la primera revisión quedaron resueltas con un override acotado: `minimatch@10.2.6` se sustituye por **11.0.3**. `npm audit` completo devuelve **0 vulnerabilidades detectadas**, incluidas dependencias de desarrollo. Las secciones originales siguientes conservan los resultados y la decisión de la primera revisión.
+
+ESLint 10.14.0, `@eslint/config-array` 0.23.5 y typescript-eslint 8.72.1 todavía solicitan la rama 10. El override cruza un major de esa dependencia transitiva; se revisaron las APIs consumidas (`Minimatch`, `minimatch` y sus opciones) y se validó el tooling del proyecto con Node 24. La versión 11.0.3 declara soporte para Node 18, 20 y >=22, CommonJS y ESM. El override solo afecta a 10.2.6, no fuerza otras ramas presentes o futuras. Retirarlo cuando los consumidores adopten una versión corregida y repetir auditoría y lint; si se incorpora otra versión vulnerable, revisar el selector. No se deshabilitaron avisos ni se usó `audit fix --force`.
+
+Validación de la corrección: `npm ci` reproducible, `npm audit` sin avisos, `npm ls minimatch` con los tres consumidores en 11.0.3, lint y build correctos, 52 tests Node y 31 UI correctos. ESLint conserva los mismos 100 archivos analizados y rechaza una variable sin usar introducida por stdin como prueba negativa; no se guardó ese código de prueba. No se modificó backend. En la revisión posterior se repitieron auditoría NuGet y tests .NET: sin paquetes vulnerables detectados, 133 tests correctos y 20 omitidos por falta de PostgreSQL desechable. Se mantiene la versión 1.2.3 pendiente: es mantenimiento del tooling.
+
 ## Alcance y resultado
 
 Revisión local del repositorio DoneToday: React/Vite/TypeScript, ASP.NET Core/EF Core/Npgsql, Docker, CI, configuración de proxy y documentación. Se consultaron npm, NuGet y avisos públicos. No se accedió al home server ni se modificaron producción, DNS, secretos, OAuth o datos. Los informes anteriores describen el hosting de su fecha; sus referencias a Render se conservan como evidencia histórica.
