@@ -1,3 +1,4 @@
+# Legacy optional Render deployment; current hosting is documented in docs/deployment.md.
 services:
   - type: web
     name: donetoday

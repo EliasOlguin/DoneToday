@@ -20,9 +20,9 @@ Las capturas usan una sola cuenta de demo local con tres semanas de historial va
 
 ## Demo en vivo
 
-[Abrir DoneToday](https://donetoday-15xl.onrender.com)
+[Abrir DoneToday](https://donetoday.eliasolguin.dev)
 
-El hosting gratuito de Render se suspende por inactividad; la primera carga puede tardar alrededor de un minuto.
+Alojado en el home server del autor (notebook).
 
 Podés explorar con la opción de invitado sin registrarte o crear una cuenta con confirmación de email. El acceso con Google está disponible cuando se configuran las credenciales del proveedor.
 
@@ -35,8 +35,8 @@ Podés explorar con la opción de invitado sin registrarte o crear una cuenta co
 | Idiomas | i18next y react-i18next; inglés, español y alemán |
 | Backend | ASP.NET Core 10, Kestrel, Entity Framework Core 10 |
 | Base de datos y cuentas | PostgreSQL, ASP.NET Core Identity, autenticación por cookies y 2FA opcional con autenticador |
-| Email | MailKit/SMTP; Brevo en el despliegue de Render |
-| Despliegue | Compilación Docker por etapas; la API sirve los archivos del frontend en Render |
+| Email | MailKit/SMTP; API HTTPS de Brevo opcional |
+| Despliegue | Compilación Docker por etapas; la API sirve los archivos del frontend en el home server |
 | Tests | xUnit, Vitest, Testing Library y el ejecutor de tests de Node.js |
 
 ## Decisiones técnicas
@@ -54,7 +54,7 @@ Podés explorar con la opción de invitado sin registrarte o crear una cuenta co
 ```mermaid
 flowchart LR
     Browser["Navegador: React + TypeScript"]
-    App["Contenedor en Render: ASP.NET Core / Kestrel"]
+    App["Contenedor en el home server: ASP.NET Core / Kestrel"]
     Static["Archivos compilados del frontend"]
     Services["Controladores + servicios de dominio + Identity"]
     Database[("PostgreSQL")]

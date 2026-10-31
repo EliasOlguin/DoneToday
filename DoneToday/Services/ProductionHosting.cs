@@ -32,8 +32,8 @@ public static class ProductionHosting
         options.ForwardLimit = 1;
         options.KnownIPNetworks.Clear();
         options.KnownProxies.Clear();
-        // With no explicit proxy list, this assumes Render is the only ingress.
-        // Verify Render appends the actual client IP before relying on per-IP limits.
+        // With no explicit proxy list, this trusts any peer; restrict ingress and configure the actual reverse proxy.
+        // Verify the proxy appends the actual client IP before relying on per-IP limits.
         foreach (var proxy in configuration.GetSection("Forwarding:KnownProxies").Get<string[]>() ?? [])
             options.KnownProxies.Add(System.Net.IPAddress.Parse(proxy));
     }

@@ -15,7 +15,7 @@ COPY DoneToday/ DoneToday/
 RUN dotnet publish DoneToday/DoneToday.csproj -c Release --no-restore -o /app/publish /p:UseAppHost=false
 COPY --from=frontend /src/DoneToday.Web/dist /app/publish/wwwroot
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0.13 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0.14 AS final
 WORKDIR /app
 COPY --from=backend /app/publish ./
 ENV ASPNETCORE_ENVIRONMENT=Production
