@@ -7,6 +7,17 @@ namespace DoneToday.Api.Services;
 
 public static class ProductionHosting
 {
+    public static void ConfigureHttpsRedirect(IServiceCollection services, bool development)
+    {
+        services.AddHttpsRedirection(options =>
+        {
+            if (development) return;
+            // TLS terminates at the trusted ingress; Kestrel only exposes HTTP in Docker.
+            options.HttpsPort = 443;
+            options.RedirectStatusCode = StatusCodes.Status308PermanentRedirect;
+        });
+    }
+
     public static void Configure(WebApplicationBuilder builder)
     {
         if (builder.Environment.IsDevelopment()) return;

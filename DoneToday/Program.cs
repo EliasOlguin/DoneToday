@@ -33,6 +33,7 @@ builder.Services.AddHsts(options =>
     options.MaxAge = TimeSpan.FromDays(365);
     options.IncludeSubDomains = true;
 });
+ProductionHosting.ConfigureHttpsRedirect(builder.Services, builder.Environment.IsDevelopment());
 builder.Services.AddAntiforgery(options =>
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always);
 

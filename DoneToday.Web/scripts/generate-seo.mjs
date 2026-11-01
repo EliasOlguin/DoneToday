@@ -16,7 +16,7 @@ const pages = {
     eyebrow: 'Small steps. Every day.',
     heading: 'Build habits. See your progress.',
     intro:
-      'Make room for the routines that matter to you. Plan your habits, record what you do and see how your consistency grows over time.',
+      'DoneToday is an open-source habit tracker by Elias Olguin. Plan your routines, track streaks and quantity goals, and review your weekly and monthly progress. Try it as a guest before creating an account.',
     guest:
       'Want to explore first? You can continue as a guest from the login screen.',
     preview:
@@ -77,7 +77,7 @@ const pages = {
     eyebrow: 'Pequeños pasos. Cada día.',
     heading: 'Creá hábitos. Descubrí tu progreso.',
     intro:
-      'Dale espacio a las rutinas que te importan. Planificá tus hábitos, registrá lo que hacés y descubrí cómo crece tu constancia con el tiempo.',
+      'DoneToday es una app de hábitos de código abierto creada por Elias Olguin. Organizá tus rutinas, registrá rachas y metas por cantidad, y revisá tu progreso semanal y mensual. Podés probarla como invitado antes de crear una cuenta.',
     guest:
       '¿Querés explorar primero? Podés continuar como invitado desde el inicio de sesión.',
     preview:
@@ -138,7 +138,7 @@ const pages = {
     eyebrow: 'Kleine Schritte. Jeden Tag.',
     heading: 'Gewohnheiten aufbauen. Fortschritte sehen.',
     intro:
-      'Schaffe Platz für die Routinen, die dir wichtig sind. Plane deine Gewohnheiten, halte deine Aktivitäten fest und beobachte deine Regelmäßigkeit im Laufe der Zeit.',
+      'DoneToday ist ein quelloffener Habit Tracker von Elias Olguin. Plane deine Routinen, verfolge Serien und Mengenziele und sieh dir Wochen- und Monatsfortschritte an. Du kannst die App zunächst als Gast ausprobieren.',
     guest:
       'Erst einmal ausprobieren? Auf der Anmeldeseite kannst du als Gast fortfahren.',
     preview:
@@ -285,7 +285,10 @@ for (const [lang, p] of Object.entries(pages)) {
   <script src="/landing-theme.js"></script>
   <link rel="stylesheet" href="/src/landing.css" />
 </head>
-<body>
+<body itemscope itemtype="https://schema.org/WebSite" itemid="${origin}/#website">
+  <meta itemprop="name" content="DoneToday" />
+  <meta itemprop="alternateName" content="DoneToday by Elias Olguin" />
+  <link itemprop="url" href="${origin}/" />
   <header class="site-header"><div class="wrap header">
     <a class="brand" href="${p.path}"><img src="/brand/logo.svg" width="36" height="36" alt="" />DoneToday</a>
     <nav class="primary-nav" aria-label="${escape(p.nav)}"><a href="#features">${p.nav}</a><a href="#how">${l.how}</a><a href="#questions">${l.faq}</a></nav>
@@ -298,7 +301,7 @@ for (const [lang, p] of Object.entries(pages)) {
     <button class="theme-toggle" type="button" data-theme-toggle data-dark-label="${l.dark}" data-light-label="${l.light}" aria-label="${l.dark}" aria-pressed="false" hidden><svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z" /></svg><svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6 7 7m10 10 1.4 1.4M5.6 18.4 7 17m10-10 1.4-1.4M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0" /></svg></button>
     <a class="login-link" href="/login?lng=${lang}">${p.login}<span aria-hidden="true">↗</span></a>
   </div></header>
-  <main class="wrap" itemscope itemtype="https://schema.org/SoftwareApplication">
+  <main class="wrap" itemprop="mainEntity" itemscope itemtype="https://schema.org/SoftwareApplication" itemid="${origin}/#app" itemref="site-publisher">
     <meta itemprop="name" content="DoneToday" /><meta itemprop="applicationCategory" content="LifestyleApplication" /><meta itemprop="operatingSystem" content="Web" />
     <link itemprop="url" href="${origin}${p.path}" />
     <section class="hero">
@@ -310,7 +313,7 @@ for (const [lang, p] of Object.entries(pages)) {
     <section id="questions" class="faq"><div><p class="section-label">${l.faq}</p><h2>${p.faq}</h2><img class="faq-character" src="/brand/habit-0.svg" width="120" height="140" alt="" loading="lazy" /></div><div>${p.questions.map(([q, a]) => `<details><summary>${q}<span aria-hidden="true">+</span></summary><p>${a}</p></details>`).join('')}</div></section>
     <section class="closing"><img src="/brand/logo.svg" width="48" height="48" alt="" loading="lazy" /><div><h2>${l.bottom}</h2><p>${l.note}</p></div><a class="button" href="/login?lng=${lang}">${p.cta} <span aria-hidden="true">→</span></a></section>
   </main>
-  <footer class="wrap"><p>${p.footer}</p><a href="https://github.com/EliasOlguin/DoneToday">${p.source}</a></footer>
+  <footer class="wrap"><p>${escape(p.footer.replace('Elias Olguin', ''))}<a id="site-publisher" itemprop="publisher" itemscope itemtype="https://schema.org/Person" itemid="https://eliasolguin.dev/#person" href="https://eliasolguin.dev/" rel="author"><span itemprop="name">Elias Olguin</span><link itemprop="url" href="https://eliasolguin.dev/" /></a></p><a href="https://github.com/EliasOlguin/DoneToday">${p.source}</a></footer>
 </body>
 </html>
 `,

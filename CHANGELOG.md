@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.1 — 2026-11-01
+
+- Permanently redirect production HTTP requests to HTTPS even when Docker only exposes an HTTP listener. / Redirige permanentemente HTTP a HTTPS en producción aunque Docker solo exponga un puerto HTTP.
+- Identify the public website and its author with structured data and clearer descriptions in English, Spanish and German. / Identifica la web y su autor con datos estructurados y descripciones más claras en inglés, español y alemán.
+
 ## 1.4.0 — 2026-11-01
 
 - Add opt-in Web Push notifications per device, daily start/pending reminders, local account schedules, a test button and device removal in English, Spanish and German. / Agrega notificaciones Web Push opcionales por dispositivo, avisos diarios de inicio y pendientes, horarios por cuenta, botón de prueba y eliminación de dispositivos en español, inglés y alemán.

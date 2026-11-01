@@ -33,6 +33,16 @@ for (const [lang, path] of Object.entries(paths)) {
       assert.ok(document.getElementById(link.getAttribute('href').slice(1)))
     }
     assert.ok(document.querySelector(`a[href="/login?lng=${lang}"]`))
+    const website = document.querySelector('body[itemscope][itemtype="https://schema.org/WebSite"]')
+    assert.ok(website, 'The subdomain home must identify its WebSite, independently from the parent portfolio')
+    assert.equal(website.querySelector(':scope > meta[itemprop="name"]').content, 'DoneToday')
+    assert.equal(website.querySelector(':scope > link[itemprop="url"]').href, origin + '/')
+    const publisher = document.querySelector('#site-publisher[itemtype="https://schema.org/Person"]')
+    assert.ok(publisher)
+    assert.equal(publisher.querySelector('[itemprop="name"]').textContent, 'Elias Olguin')
+    assert.equal(publisher.href, 'https://eliasolguin.dev/')
+    assert.match(document.querySelector('.intro').textContent, /DoneToday/)
+    assert.match(document.querySelector('.intro').textContent, /Elias Olguin/)
   })
 }
 

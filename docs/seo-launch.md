@@ -2,6 +2,8 @@
 
 Dominio preparado: **https://donetoday.eliasolguin.dev**. Estos cambios requieren desplegar una nueva compilación; modificar el repositorio no actualiza el servidor ni envía URLs a Google.
 
+Estado al 2026-11-01: el propietario ya verificó Search Console, envió el sitemap y solicitó indexación. Los informes agregados todavía están procesándose. El portfolio ya enlaza la app; el enlace Website de GitHub fue corregido al dominio actual. Ver la [auditoría y próximos pasos](seo-audit-2026-11-01.md), incluidas las mediciones de producción y las correcciones de identidad y HTTPS en 1.4.1. Las instrucciones de alta siguientes quedan como referencia, no como tareas para repetir.
+
 ## Qué se publica
 
 Las portadas `/`, `/es/` y `/de/` explican la app en inglés, español y alemán. Contienen HTML completo sin depender de React, imágenes locales, un solo H1, funciones reales, preguntas frecuentes y enlaces para entrar. No redirigen por idioma del navegador: cada traducción tiene su URL, canonical y alternates hreflang, incluido x-default. Los botones conservan el idioma mediante `?lng=`.
@@ -25,7 +27,7 @@ La portada usa microdatos `SoftwareApplication`, compatibles con la CSP existent
 2. Verificar la propiedad con el método que indique Google. La verificación DNS requiere acceso al proveedor DNS; no se incluye ningún token ficticio en el repositorio. Si Google proporciona un archivo HTML, colocarlo en `DoneToday.Web/public/` y volver a desplegar antes de verificar.
 3. En Sitemaps, enviar `https://donetoday.eliasolguin.dev/sitemap.xml`.
 4. Inspeccionar las tres portadas con la prueba de URL publicada. Revisar el HTML que recibe Google y solicitar indexación. No enviar las pantallas de cuenta ni URLs con tokens.
-5. Revisar semanalmente Indexación y Rendimiento: páginas indexadas, errores, consultas, impresiones, clics y CTR. Medir cada idioma por separado. Validar rendimiento móvil con [PageSpeed Insights](https://pagespeed.web.dev/) sobre las URLs públicas después del despliegue; no se ha medido aquí el rendimiento del servidor de producción.
+5. Revisar semanalmente Indexación y Rendimiento: páginas indexadas, errores, consultas, impresiones, clics y CTR. Medir cada idioma por separado. Validar rendimiento móvil con [PageSpeed Insights](https://pagespeed.web.dev/) sobre las URLs públicas después del despliegue; las mediciones de laboratorio del 2026-11-01 están en la auditoría enlazada arriba y no sustituyen datos de usuarios reales.
 
 Google decide si indexa una página y en qué posición mostrarla. Un sitemap ayuda a descubrirla, pero no garantiza indexación ni mejora de posiciones por sí solo. Ver [sitemaps](https://developers.google.com/search/docs/crawling-indexing/sitemaps/overview), [SEO y JavaScript](https://developers.google.com/search/docs/crawling-indexing/javascript/javascript-seo-basics) y [sitios multilingües](https://developers.google.com/search/docs/specialty/international/managing-multi-regional-sites).
 

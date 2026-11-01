@@ -10,6 +10,27 @@ namespace DoneToday.Tests.Services;
 public class SpaHostingTests
 {
     [Fact]
+    public async Task ProductionHttpPermanentlyRedirectsEvenWhenTheServerHasNoTlsListener()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.Logging.ClearProviders();
+        builder.WebHost.UseUrls("http://127.0.0.1:0");
+        ProductionHosting.ConfigureHttpsRedirect(builder.Services, development: false);
+        await using var app = builder.Build();
+        app.UseHttpsRedirection();
+        app.MapGet("/es/", () => "This must not be served over HTTP");
+        await app.StartAsync();
+        try
+        {
+            using var client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { BaseAddress = new Uri(app.Urls.Single()) };
+            client.DefaultRequestHeaders.Host = "donetoday.example.test";
+            using var response = await client.GetAsync("/es/?source=seo-check");
+            Assert.Equal(HttpStatusCode.PermanentRedirect, response.StatusCode);
+            Assert.Equal("https://donetoday.example.test/es/?source=seo-check", response.Headers.Location?.AbsoluteUri);
+        }
+        finally { await app.StopAsync(); }
+    }
+    [Fact]
     public async Task StaticCachingFallbackHstsAndServerHeaderUseRealHttpPipeline()
     {
         var root = Path.Combine(Path.GetTempPath(), "donetoday-spa-" + Guid.NewGuid());
