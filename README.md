@@ -123,7 +123,9 @@ Read confirmation messages at `http://127.0.0.1:8025`. See [local email setup](d
 
 ## Tests and checks
 
-[GitHub Actions](.github/workflows/ci.yml) runs backend tests and frontend checks on pushes to `main`, pull requests, and manual runs. The CI badge above links to the results. The workflow does not configure PostgreSQL, so the opt-in database integration tests described below remain skipped.
+[GitHub Actions](.github/workflows/ci.yml) runs backend tests and frontend checks on pushes to `main`, pull requests, and manual runs. The CI badge above links to the results. CI provides a disposable PostgreSQL 17 service and enables the database security and notification integration tests described below.
+
+Optional Web Push reminders (daily, per habit and weekly) require confirmed accounts and private server configuration. See [notification setup and behavior](docs/notifications.md).
 
 From the repository root:
 

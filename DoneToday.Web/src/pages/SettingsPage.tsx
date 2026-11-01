@@ -17,6 +17,7 @@ import ProfileSettings from '../components/ProfileSettings'
 import GuestDeletion from '../components/GuestDeletion'
 import { useSession } from '../hooks/useSession'
 import { appVersion } from '../lib/version'
+import NotificationSettings from '../components/NotificationSettings'
 
 export default function SettingsPage() {
   const { t } = useTranslation()
@@ -66,6 +67,7 @@ export default function SettingsPage() {
       )}
       <InstallApp />
       <TimeZoneSettings />
+      {session.data && <NotificationSettings userId={session.data.id} isGuest={session.data.isGuest} />}
       <ProfileSettings />
       <section className="panel mt-6">
         <h2 className="font-semibold">{t('settings.appearance')}</h2>

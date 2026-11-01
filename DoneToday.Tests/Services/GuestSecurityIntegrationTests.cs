@@ -33,7 +33,7 @@ public sealed class SecurityPostgresFactAttribute : FactAttribute
     }
 }
 
-public class GuestSecurityIntegrationTests
+public partial class GuestSecurityIntegrationTests
 {
     private const string Password = "SecurityTestPassword123!";
 
@@ -706,6 +706,7 @@ public class GuestSecurityIntegrationTests
         public WebApplication App { get; private set; } = null!;
         public TestClock Clock { get; } = new();
         public CaptureMail Mail { get; } = new();
+        public CapturePush Push { get; } = new();
         private string adminConnection = "";
         private string databaseName = "";
         private string connection = "";
@@ -749,6 +750,10 @@ public class GuestSecurityIntegrationTests
             builder.Services.AddScoped<UserDateService>();
             builder.Services.AddScoped<StreakService>();
             builder.Services.AddScoped<ProgressService>();
+            builder.Services.Configure<DoneToday.Api.Services.Notifications.PushOptions>(o =>
+            { o.Enabled = true; o.Subject = "mailto:test@example.test"; o.PublicKey = "test-public"; o.PrivateKey = "test-private"; });
+            builder.Services.AddSingleton<DoneToday.Api.Services.Notifications.IPushTransport>(host.Push);
+            builder.Services.AddScoped<DoneToday.Api.Services.Notifications.NotificationQueue>();
             builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?> {
                 ["Authentication:FrontendUrl"] = "https://localhost:5173", ["Email:DailyBudget"] = (dailyBudget ?? 250).ToString(),
                 ["Authentication:Google:ClientId"] = "test-only", ["Authentication:Google:ClientSecret"] = "test-only"

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.4.0 — 2026-11-01
+
+- Add opt-in Web Push notifications per device, daily start/pending reminders, local account schedules, a test button and device removal in English, Spanish and German. / Agrega notificaciones Web Push opcionales por dispositivo, avisos diarios de inicio y pendientes, horarios por cuenta, botón de prueba y eliminación de dispositivos en español, inglés y alemán.
+- Add scheduled reminders for up to three habits and one 30-minute postponement per habit/day, skipping completed, archived and unscheduled habits. / Agrega recordatorios para hasta tres hábitos y una posposición de 30 minutos por hábito/día, omitiendo hábitos completados, archivados y no programados.
+- Add optional previous-week summaries, quiet hours, temporary pauses and private notification text by default. Persist delivery deduplication, bounded retries and expiration; revoke device authorization after logout/security changes. / Agrega resúmenes opcionales de la semana anterior, silencio, pausas y texto privado por defecto; guarda deduplicación, reintentos limitados y vencimiento, y revoca la autorización de dispositivos al cerrar sesión o cambiar la seguridad.
+- Delivery remains disabled until private VAPID settings are configured and the three additive migrations are applied. / El envío permanece desactivado hasta configurar las claves VAPID privadas y aplicar las tres migraciones aditivas.
+
 ## 1.3.1 — 2026-11-01
 
 - Add a light/dark theme switch to the three public landing pages, sharing the saved preference with the app and following the system when no preference is saved. Update the preview to a real screenshot in the selected theme and language. / Agrega un selector claro/oscuro a las tres portadas públicas, comparte la preferencia guardada con la app y sigue el sistema si no hay una elección guardada. La vista previa muestra una captura real con el tema e idioma seleccionados.

@@ -8,6 +8,8 @@ URL de producción: **https://donetoday.eliasolguin.dev**. Alojamiento: notebook
 
 Public landing pages, indexing checks and Google Search Console setup: [SEO launch guide](seo-launch.md). Deploy the backend together with the complete frontend build: application routes now use `app.html`, while `index.html` is the public landing page.
 
+Web Push notifications are off by default. Apply the additive migrations and configure private VAPID settings before enabling delivery: [notification setup and verification](notifications.md).
+
 Supply settings privately through the service manager or an untracked environment file. Never commit credentials.
 
 | Variable | Value / Valor |

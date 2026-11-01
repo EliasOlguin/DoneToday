@@ -123,7 +123,9 @@ Leé los mensajes de confirmación en `http://127.0.0.1:8025`. Consultá la [con
 
 ## Tests y verificaciones
 
-[GitHub Actions](.github/workflows/ci.yml) ejecuta los tests del backend y las verificaciones del frontend al subir cambios a `main`, abrir o actualizar un pull request y ejecutarlo manualmente. El badge de CI de arriba enlaza a los resultados. El workflow no configura PostgreSQL, por lo que los tests de integración de base de datos descritos abajo quedan omitidos.
+[GitHub Actions](.github/workflows/ci.yml) ejecuta los tests del backend y las verificaciones del frontend al subir cambios a `main`, abrir o actualizar un pull request y ejecutarlo manualmente. El badge de CI de arriba enlaza a los resultados. El CI incorpora un PostgreSQL 17 descartable y activa los tests de integración de seguridad y notificaciones descritos abajo.
+
+Los recordatorios Web Push opcionales (diarios, por hábito y semanales) requieren una cuenta confirmada y configuración privada en el servidor. Consultá [la activación y el comportamiento de las notificaciones](docs/notifications.md).
 
 Desde la raíz:
 

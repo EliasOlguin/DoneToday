@@ -5,6 +5,14 @@ using DoneToday.Api.Entities;
 using DoneToday.Api.Services.Email;
 using Microsoft.AspNetCore.Identity;
 
+if (args.Length > 0 && args[0] == "--create-push-settings")
+{
+    if (args.Length != 3) throw new ArgumentException("Usage: --create-push-settings <private-file> <mailto:contact-or-https-subject>");
+    DoneToday.Api.Services.Notifications.PushSettingsGenerator.Write(args[1], args[2]);
+    Console.WriteLine("Push settings created without enabling delivery. Keep the file private and configure the service after migrating.");
+    return;
+}
+
 var builder = WebApplication.CreateBuilder(args);
 ProductionHosting.Configure(builder);
 
@@ -46,6 +54,10 @@ builder.Services.AddScoped<ProgressService>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<UserDateService>();
 builder.Services.AddHostedService<GuestCleanup>();
+builder.Services.Configure<DoneToday.Api.Services.Notifications.PushOptions>(builder.Configuration.GetSection("Push"));
+builder.Services.AddSingleton<DoneToday.Api.Services.Notifications.IPushTransport, DoneToday.Api.Services.Notifications.PushTransport>();
+builder.Services.AddScoped<DoneToday.Api.Services.Notifications.NotificationQueue>();
+builder.Services.AddHostedService<DoneToday.Api.Services.Notifications.NotificationWorker>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {

@@ -17,7 +17,7 @@ namespace DoneToday.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.12")
+                .HasAnnotation("ProductVersion", "10.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -215,6 +215,179 @@ namespace DoneToday.Migrations
                         .IsUnique();
 
                     b.ToTable("HabitProgressEntries");
+                });
+
+            modelBuilder.Entity("DoneToday.Api.Entities.HabitReminder", b =>
+                {
+                    b.Property<int>("HabitId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateOnly?>("SnoozedDate")
+                        .HasColumnType("date");
+
+                    b.Property<DateTimeOffset?>("SnoozedUntil")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<TimeOnly>("Time")
+                        .HasColumnType("time without time zone");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("HabitId");
+
+                    b.HasIndex("UserId", "Enabled");
+
+                    b.ToTable("HabitReminders");
+                });
+
+            modelBuilder.Entity("DoneToday.Api.Entities.NotificationDelivery", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Count")
+                        .HasColumnType("integer");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<int>("DeviceId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("Finished")
+                        .HasColumnType("boolean");
+
+                    b.Property<int?>("HabitId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTimeOffset?>("LockedUntil")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("NextAttemptAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeviceId", "Key")
+                        .IsUnique();
+
+                    b.HasIndex("Finished", "NextAttemptAt");
+
+                    b.ToTable("NotificationDeliveries");
+                });
+
+            modelBuilder.Entity("DoneToday.Api.Entities.NotificationDevice", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AuthorizationStampHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("EndpointHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTimeOffset?>("LastTestAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ProtectedSubscription")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EndpointHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("NotificationDevices");
+                });
+
+            modelBuilder.Entity("DoneToday.Api.Entities.NotificationPreferences", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("EveningEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<TimeOnly>("EveningTime")
+                        .HasColumnType("time without time zone");
+
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)");
+
+                    b.Property<bool>("MorningEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<TimeOnly>("MorningTime")
+                        .HasColumnType("time without time zone");
+
+                    b.Property<DateOnly?>("PausedThrough")
+                        .HasColumnType("date");
+
+                    b.Property<bool>("QuietEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<TimeOnly>("QuietEnd")
+                        .HasColumnType("time without time zone");
+
+                    b.Property<TimeOnly>("QuietStart")
+                        .HasColumnType("time without time zone");
+
+                    b.Property<bool>("ShowHabitNames")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("WeeklyDay")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("WeeklyEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<TimeOnly>("WeeklyTime")
+                        .HasColumnType("time without time zone");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("NotificationPreferences");
                 });
 
             modelBuilder.Entity("DoneToday.Api.Entities.User", b =>
@@ -529,6 +702,50 @@ namespace DoneToday.Migrations
                         .IsRequired();
 
                     b.Navigation("Progress");
+                });
+
+            modelBuilder.Entity("DoneToday.Api.Entities.HabitReminder", b =>
+                {
+                    b.HasOne("DoneToday.Api.Entities.Habit", "Habit")
+                        .WithOne()
+                        .HasForeignKey("DoneToday.Api.Entities.HabitReminder", "HabitId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Habit");
+                });
+
+            modelBuilder.Entity("DoneToday.Api.Entities.NotificationDelivery", b =>
+                {
+                    b.HasOne("DoneToday.Api.Entities.NotificationDevice", "Device")
+                        .WithMany()
+                        .HasForeignKey("DeviceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Device");
+                });
+
+            modelBuilder.Entity("DoneToday.Api.Entities.NotificationDevice", b =>
+                {
+                    b.HasOne("DoneToday.Api.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("DoneToday.Api.Entities.NotificationPreferences", b =>
+                {
+                    b.HasOne("DoneToday.Api.Entities.User", "User")
+                        .WithOne()
+                        .HasForeignKey("DoneToday.Api.Entities.NotificationPreferences", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("HabitSchedule", b =>

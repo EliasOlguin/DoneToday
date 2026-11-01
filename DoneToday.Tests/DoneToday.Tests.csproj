@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DoneToday\DoneToday.csproj" />
+    <None Include="../docs/sql/notifications-1.4.0.sql" Link="notifications-1.4.0.sql" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

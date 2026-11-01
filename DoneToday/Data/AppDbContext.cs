@@ -20,10 +20,28 @@ public class AppDbContext : IdentityDbContext<User, IdentityRole<int>, int>, IDa
     public DbSet<HabitGoal> HabitGoals => Set<HabitGoal>();
     public DbSet<HabitDayProgress> HabitDayProgress => Set<HabitDayProgress>();
     public DbSet<HabitProgressEntry> HabitProgressEntries => Set<HabitProgressEntry>();
+    public DbSet<NotificationPreferences> NotificationPreferences => Set<NotificationPreferences>();
+    public DbSet<NotificationDevice> NotificationDevices => Set<NotificationDevice>();
+    public DbSet<NotificationDelivery> NotificationDeliveries => Set<NotificationDelivery>();
+    public DbSet<HabitReminder> HabitReminders => Set<HabitReminder>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.Entity<HabitReminder>().HasKey(r => r.HabitId);
+        modelBuilder.Entity<HabitReminder>().HasOne(r => r.Habit).WithOne().HasForeignKey<HabitReminder>(r => r.HabitId);
+        modelBuilder.Entity<HabitReminder>().HasIndex(r => new { r.UserId, r.Enabled });
+        modelBuilder.Entity<NotificationPreferences>().HasKey(p => p.UserId);
+        modelBuilder.Entity<NotificationPreferences>().HasOne(p => p.User).WithOne().HasForeignKey<NotificationPreferences>(p => p.UserId);
+        modelBuilder.Entity<NotificationPreferences>().Property(p => p.Language).HasMaxLength(2);
+        modelBuilder.Entity<NotificationDevice>().HasOne(d => d.User).WithMany().HasForeignKey(d => d.UserId);
+        modelBuilder.Entity<NotificationDevice>().HasIndex(d => d.EndpointHash).IsUnique();
+        modelBuilder.Entity<NotificationDevice>().Property(d => d.EndpointHash).HasMaxLength(64);
+        modelBuilder.Entity<NotificationDelivery>().HasOne(d => d.Device).WithMany().HasForeignKey(d => d.DeviceId);
+        modelBuilder.Entity<NotificationDelivery>().HasIndex(d => new { d.DeviceId, d.Key }).IsUnique();
+        modelBuilder.Entity<NotificationDelivery>().HasIndex(d => new { d.Finished, d.NextAttemptAt });
+        modelBuilder.Entity<NotificationDelivery>().Property(d => d.Key).HasMaxLength(100);
+        modelBuilder.Entity<NotificationDelivery>().Property(d => d.Kind).HasMaxLength(20);
 
         modelBuilder.Entity<User>().ToTable("Users");
         modelBuilder.Entity<Habit>().Property(h => h.GoalTarget).HasPrecision(12, 3);

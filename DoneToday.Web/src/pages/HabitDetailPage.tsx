@@ -11,6 +11,7 @@ import HabitProgressControl from '../components/HabitProgressControl'
 import MeasurementText from '../components/MeasurementText'
 import { useSession } from '../hooks/useSession'
 import { useNow } from '../hooks/useNow'
+import HabitReminderSettings from '../components/HabitReminderSettings'
 
 export default function HabitDetailPage() {
   const { t } = useTranslation()
@@ -241,6 +242,7 @@ export default function HabitDetailPage() {
           </p>
         )}
       </div>
+      {session.data && !session.data.isGuest && !habit.data.isArchived && <HabitReminderSettings habitId={habitId}/>}
     </section>
   )
 }
