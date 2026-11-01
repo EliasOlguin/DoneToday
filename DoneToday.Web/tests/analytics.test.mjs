@@ -4,10 +4,10 @@ import {readFileSync} from 'node:fs'
 import {JSDOM, VirtualConsole} from 'jsdom'
 
 const key='donetoday-analytics-consent-v1'
-async function setup({saved, id='G-TEST123456', path='/es/?token=private#secret', blocked=false}={}) {
+async function setup({saved, id='G-TEST123456', tagId, path='/es/?token=private#secret', blocked=false}={}) {
   const dom=new JSDOM('<html lang="es"><button data-analytics-settings hidden>Privacidad</button><a class="button" href="/login?lng=es">Probar</a><a href="https://other.example/">Otro</a></html>', {url:'https://donetoday.example'+path,referrer:'https://source.example/search?q=private',runScripts:'outside-only',virtualConsole:new VirtualConsole()})
   const {window}=dom
-  window.fetch=async()=>({ok:true,json:async()=>({measurementId:id})})
+  window.fetch=async()=>({ok:true,json:async()=>({measurementId:id,tagId})})
   if(saved)window.localStorage.setItem(key,JSON.stringify(saved))
   if(blocked)Object.defineProperty(window,'localStorage',{get(){throw new Error('blocked')}})
   const script=readFileSync(new URL('../public/landing-analytics.js',import.meta.url),'utf8')
@@ -16,6 +16,17 @@ async function setup({saved, id='G-TEST123456', path='/es/?token=private#secret'
   return {window,document:window.document,commands:()=>Array.from(window.dataLayer??[],args=>Array.from(args))}
 }
 const choice=(value,expires=Date.now()+60000)=>({value,expires})
+
+test('a linked Google tag can load separately while explicit events target only the selected measurement stream',async()=>{
+  const {window,document,commands}=await setup({tagId:'G-LOAD123456',saved:choice('granted')})
+  assert.ok(document.querySelector('script[src="https://www.googletagmanager.com/gtag/js?id=G-LOAD123456"]'))
+  assert.equal(commands().find(x=>x[0]==='config')[1],'G-TEST123456')
+  document.querySelector('a.button').click()
+  const events=commands().filter(x=>x[0]==='event')
+  assert.equal(events.length,2)
+  for(const event of events)assert.equal(event[2].send_to,'G-TEST123456')
+  window.close()
+})
 
 test('before consent and after rejection no Google tag or event is created',async()=>{
   const {window,document,commands}=await setup()
@@ -74,7 +85,7 @@ test('withdrawal disables GA, clears its cookies and stops application click eve
   window.close()
 })
 test('missing/invalid config and private routes never load analytics; blocked storage does not break the page',async()=>{
-  for(const options of [{id:''},{id:'G-\"bad'},{path:'/reset-password?token=private',saved:choice('granted')}]){
+  for(const options of [{id:''},{id:'G-\"bad'},{tagId:'https://untrusted.example/'},{path:'/reset-password?token=private',saved:choice('granted')}]){
     const {window,document,commands}=await setup(options)
     assert.deepEqual(commands(),[])
     assert.equal(document.querySelector('script[src*="googletagmanager"]'),null)

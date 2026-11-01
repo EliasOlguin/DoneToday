@@ -2,11 +2,15 @@
 ;(async function () {
   if (!['/', '/index.html', '/es/', '/es/index.html', '/de/', '/de/index.html'].includes(location.pathname)) return
   let id
+  let tagId
   try {
     const response = await fetch('/analytics-config.json', { cache: 'no-store', signal: AbortSignal.timeout(3000) })
     if (!response.ok) return
-    id = (await response.json()).measurementId
+    const config = await response.json()
+    id = config.measurementId
+    tagId = config.tagId ?? id
     if (typeof id !== 'string' || !/^G-[A-Z0-9]{4,20}$/.test(id)) return
+    if (typeof tagId !== 'string' || !/^(?:G|GT)-[A-Z0-9]{4,20}$/.test(tagId)) return
   } catch { return }
 
   const key = 'donetoday-analytics-consent-v1'
@@ -42,10 +46,10 @@
       cookie_domain: 'none', cookie_expires: 180 * 24 * 60 * 60, cookie_update: false,
       page_location: pageLocation, page_referrer: referrer, page_title: 'DoneToday — ' + language,
     })
-    window.gtag('event', 'page_view', { page_location: pageLocation, page_referrer: referrer, page_title: 'DoneToday — ' + language, language })
+    window.gtag('event', 'page_view', { send_to: id, page_location: pageLocation, page_referrer: referrer, page_title: 'DoneToday — ' + language, language })
     const tag = document.createElement('script')
     tag.async = true
-    tag.src = 'https://www.googletagmanager.com/gtag/js?id=' + id
+    tag.src = 'https://www.googletagmanager.com/gtag/js?id=' + tagId
     document.head.append(tag)
   }
   function stop() {
@@ -113,7 +117,7 @@
     }
     const link = event.target.closest?.('a[href]')
     if (link && link.origin === location.origin && link.pathname === '/login') {
-      window.gtag('event', 'open_app', { language, page_location: pageLocation, transport_type: 'beacon' })
+      window.gtag('event', 'open_app', { send_to: id, language, page_location: pageLocation, transport_type: 'beacon' })
     }
   })
   window.addEventListener('storage', event => {

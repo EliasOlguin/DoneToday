@@ -1,7 +1,9 @@
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
+const analyticsHash = createHash('sha256').update(readFileSync(`${root}public/landing-analytics.js`)).digest('hex').slice(0, 12)
 const origin = 'https://donetoday.eliasolguin.dev'
 const pages = {
   en: {
@@ -283,7 +285,7 @@ for (const [lang, p] of Object.entries(pages)) {
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="apple-touch-icon" href="/icons/apple-touch-180.png" />
   <script src="/landing-theme.js"></script>
-  <script src="/landing-analytics.js" defer></script>
+  <script src="/landing-analytics.js?v=${analyticsHash}" defer></script>
   <link rel="stylesheet" href="/src/landing.css" />
 </head>
 <body itemscope itemtype="https://schema.org/WebSite" itemid="${origin}/#website">

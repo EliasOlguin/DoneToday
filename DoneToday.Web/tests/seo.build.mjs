@@ -2,6 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync, existsSync } from 'node:fs'
 import { JSDOM } from 'jsdom'
+import { createHash } from 'node:crypto'
 
 const dist = new URL('../dist/', import.meta.url)
 const origin = 'https://donetoday.eliasolguin.dev'
@@ -16,7 +17,8 @@ for (const [lang, path] of Object.entries(paths)) {
     assert.ok(document.querySelector('main').textContent.length > 1000)
     assert.equal(document.querySelectorAll('script').length, 2)
     assert.equal(document.querySelector('script').getAttribute('src'), '/landing-theme.js')
-    assert.ok(document.querySelector('script[src="/landing-analytics.js"][defer]'))
+    const analyticsHash = createHash('sha256').update(readFileSync(new URL('landing-analytics.js', dist))).digest('hex').slice(0, 12)
+    assert.ok(document.querySelector(`script[src="/landing-analytics.js?v=${analyticsHash}"][defer]`))
     assert.ok(document.querySelector('button[data-analytics-settings][hidden]'))
     assert.ok(document.querySelector('button[data-theme-toggle][aria-label]'))
     assert.equal(document.querySelector('link[rel="canonical"]').href, origin + path)
@@ -29,7 +31,7 @@ for (const [lang, path] of Object.entries(paths)) {
     }
     for (const element of document.querySelectorAll('img, source, script, link[rel="stylesheet"], link[rel="icon"]')) {
       const asset = element.getAttribute('src') ?? element.getAttribute('srcset') ?? element.getAttribute('href')
-      assert.ok(existsSync(new URL(`.${asset}`, dist)), `Missing built asset: ${asset}`)
+      assert.ok(existsSync(new URL(`.${asset.split('?')[0]}`, dist)), `Missing built asset: ${asset}`)
     }
     for (const link of document.querySelectorAll('a[href^="#"]')) {
       assert.ok(document.getElementById(link.getAttribute('href').slice(1)))
@@ -59,4 +61,5 @@ test('discovery files list public landing pages and the application shell stays 
   assert.equal(shell.querySelector('script[src="/landing-analytics.js"]'), null)
   const analytics = JSON.parse(readFileSync(new URL('analytics-config.json', dist), 'utf8'))
   assert.ok(analytics.measurementId === '' || /^G-[A-Z0-9]{4,20}$/.test(analytics.measurementId))
+  assert.ok(analytics.tagId === undefined || /^(?:G|GT)-[A-Z0-9]{4,20}$/.test(analytics.tagId))
 })

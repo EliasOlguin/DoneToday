@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.5.1 — 2026-11-01
+
+- Correct the Google Analytics measurement ID to the owner's DoneToday web stream, loading its linked tag and explicitly routing events to the selected destination. / Corrige el ID de medición de Google Analytics al flujo web de DoneToday indicado por el propietario, carga su etiqueta vinculada y dirige los eventos explícitamente al destino seleccionado.
+- Refresh the public analytics script URL whenever its content changes so cached visitors receive fixes. / Actualiza la URL del script público de estadísticas cuando cambia su contenido para que los visitantes reciban las correcciones aunque tengan una copia en caché.
+
 ## 1.5.0 — 2026-11-01
 
 - Add optional Google Analytics 4 on public landing pages in English, Spanish and German, measuring page views and clicks to open the app after consent. / Agrega Google Analytics 4 opcional en las portadas en inglés, español y alemán para medir visitas y clics de entrada a la app después de aceptar.
