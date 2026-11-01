@@ -14,7 +14,9 @@ for (const [lang, path] of Object.entries(paths)) {
     assert.equal(document.documentElement.lang, lang)
     assert.equal(document.querySelectorAll('h1').length, 1)
     assert.ok(document.querySelector('main').textContent.length > 1000)
-    assert.equal(document.querySelectorAll('script').length, 0)
+    assert.equal(document.querySelectorAll('script').length, 1)
+    assert.equal(document.querySelector('script').getAttribute('src'), '/landing-theme.js')
+    assert.ok(document.querySelector('button[data-theme-toggle][aria-label]'))
     assert.equal(document.querySelector('link[rel="canonical"]').href, origin + path)
     assert.match(document.querySelector('meta[name="robots"]').content, /^index, follow/)
     assert.ok(document.querySelector('meta[name="description"]').content.length > 90)
@@ -23,8 +25,8 @@ for (const [lang, path] of Object.entries(paths)) {
       assert.equal(document.querySelector(`link[hreflang="${code}"]`).href, origin + alternate)
       assert.ok(document.querySelector(`nav a[href="${alternate}"]`))
     }
-    for (const element of document.querySelectorAll('img, link[rel="stylesheet"], link[rel="icon"]')) {
-      const asset = element.getAttribute('src') ?? element.getAttribute('href')
+    for (const element of document.querySelectorAll('img, source, script, link[rel="stylesheet"], link[rel="icon"]')) {
+      const asset = element.getAttribute('src') ?? element.getAttribute('srcset') ?? element.getAttribute('href')
       assert.ok(existsSync(new URL(`.${asset}`, dist)), `Missing built asset: ${asset}`)
     }
     for (const link of document.querySelectorAll('a[href^="#"]')) {

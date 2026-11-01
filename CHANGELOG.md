@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.1 — 2026-11-01
+
+- Add a light/dark theme switch to the three public landing pages, sharing the saved preference with the app and following the system when no preference is saved. Update the preview to a real screenshot in the selected theme and language. / Agrega un selector claro/oscuro a las tres portadas públicas, comparte la preferencia guardada con la app y sigue el sistema si no hay una elección guardada. La vista previa muestra una captura real con el tema e idioma seleccionados.
+
 ## 1.3.0 — 2026-11-01
 
 - Add static public landing pages in English, Spanish and German, canonical/hreflang metadata, social previews, a sitemap and robots.txt. Keep the application shell out of search and return HTTP 404 for unknown routes. / Agrega portadas públicas estáticas en inglés, español y alemán, metadatos canonical/hreflang, vistas previas al compartir, sitemap y robots.txt; excluye la app del índice y devuelve HTTP 404 en rutas inexistentes.

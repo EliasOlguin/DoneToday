@@ -10,7 +10,7 @@ Las portadas `/`, `/es/` y `/de/` explican la app en inglés, español y alemán
 
 Vite compila cuatro entradas HTML. `app.html` conserva la aplicación React; el backend lo sirve para rutas conocidas como `/login`, `/today` y `/habits/123`. Se envía `noindex, follow` tanto en el HTML de la app como en la cabecera HTTP. Las rutas desconocidas devuelven 404 para evitar soft 404. `robots.txt` permite el rastreo para que Google pueda leer el noindex; no es un control de acceso. Los datos privados siguen protegidos por autenticación. El manifiesto abre `/today` al iniciar la app instalada.
 
-La portada usa microdatos `SoftwareApplication`, compatibles con la CSP existente, sin scripts adicionales, valoraciones inventadas ni promesas de resultados enriquecidos. Las vistas previas sociales usan el icono PNG existente. Las portadas no descargan el JavaScript de React ni incorporan rastreadores.
+La portada usa microdatos `SoftwareApplication`, compatibles con la CSP existente, sin valoraciones inventadas ni promesas de resultados enriquecidos. Las vistas previas sociales usan el icono PNG existente. Las portadas no descargan el JavaScript de React ni incorporan rastreadores. Un pequeño script local aplica el tema antes del primer render, comparte la preferencia `donetoday-theme` con la aplicación y permite alternar claro/oscuro en los tres idiomas. Si no hay preferencia guardada, sigue el sistema. Sin JavaScript el contenido sigue disponible y CSS y `<picture>` adaptan colores y captura al tema del sistema.
 
 ## Antes de solicitar la indexación
 

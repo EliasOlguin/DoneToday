@@ -199,6 +199,8 @@ const labels = {
     how: 'How it works',
     faq: 'Questions',
     language: 'Language',
+    dark: 'Dark mode',
+    light: 'Switch to light mode',
     demo: 'A look inside DoneToday',
     sample: 'One day at a time',
     habits: ['Read · 20 min', 'Drink water', 'Walk · 30 min'],
@@ -210,6 +212,8 @@ const labels = {
     how: 'Cómo funciona',
     faq: 'Preguntas',
     language: 'Idioma',
+    dark: 'Modo oscuro',
+    light: 'Cambiar a modo claro',
     demo: 'Así se ve tu día en DoneToday',
     sample: 'Un día a la vez',
     habits: ['Leer · 20 min', 'Beber agua', 'Caminar · 30 min'],
@@ -221,6 +225,8 @@ const labels = {
     how: 'So funktioniert’s',
     faq: 'Fragen',
     language: 'Sprache',
+    dark: 'Dunkler Modus',
+    light: 'Zum hellen Modus wechseln',
     demo: 'So sieht dein Tag in DoneToday aus',
     sample: 'Ein Tag nach dem anderen',
     habits: ['Lesen · 20 Min.', 'Wasser trinken', 'Spazieren · 30 Min.'],
@@ -276,6 +282,7 @@ for (const [lang, p] of Object.entries(pages)) {
   <meta name="theme-color" content="#7154ce" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="apple-touch-icon" href="/icons/apple-touch-180.png" />
+  <script src="/landing-theme.js"></script>
   <link rel="stylesheet" href="/src/landing.css" />
 </head>
 <body>
@@ -288,6 +295,7 @@ for (const [lang, p] of Object.entries(pages)) {
           `<a href="${page.path}" lang="${code}" hreflang="${code}"${code === lang ? ' aria-current="page"' : ''}>${{ en: 'EN', es: 'ES', de: 'DE' }[code]}<span class="sr-only"> · ${{ en: 'English', es: 'Español', de: 'Deutsch' }[code]}</span></a>`,
       )
       .join('')}</nav>
+    <button class="theme-toggle" type="button" data-theme-toggle data-dark-label="${l.dark}" data-light-label="${l.light}" aria-label="${l.dark}" aria-pressed="false" hidden><svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z" /></svg><svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6 7 7m10 10 1.4 1.4M5.6 18.4 7 17m10-10 1.4-1.4M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0" /></svg></button>
     <a class="login-link" href="/login?lng=${lang}">${p.login}<span aria-hidden="true">↗</span></a>
   </div></header>
   <main class="wrap" itemscope itemtype="https://schema.org/SoftwareApplication">
@@ -295,7 +303,7 @@ for (const [lang, p] of Object.entries(pages)) {
     <link itemprop="url" href="${origin}${p.path}" />
     <section class="hero">
       <div class="hero-copy"><p class="eyebrow"><span aria-hidden="true">✓</span>${p.eyebrow}</p><h1>${p.heading}</h1><p class="intro" itemprop="description">${p.intro}</p><a class="button" href="/login?lng=${lang}">${l.start} <span aria-hidden="true">→</span></a><p class="hint">${p.guest}</p><div class="tiny-habits" aria-hidden="true"><img src="/brand/habit-0.svg" width="64" height="76" alt="" /><img src="/brand/habit-1.svg" width="64" height="76" alt="" /><img src="/brand/habit-2.svg" width="64" height="76" alt="" /><span>${l.sample}</span></div></div>
-      <figure class="product-preview"><div class="preview-label"><span class="status-dot" aria-hidden="true"></span>${l.demo}</div><a href="/screenshots/today-${p.image}.webp" target="_blank" rel="noopener"><img src="/screenshots/today-${p.image}.webp" alt="${escape(p.preview)}" width="1280" height="1173" fetchpriority="high" /></a><figcaption>${p.preview}</figcaption></figure>
+      <figure class="product-preview"><div class="preview-label"><span class="status-dot" aria-hidden="true"></span>${l.demo}</div><a href="/screenshots/today-${p.image}.webp" target="_blank" rel="noopener"><picture><source data-dark-preview media="(prefers-color-scheme: dark)" srcset="/screenshots/today-${p.image}-dark.webp" /><img src="/screenshots/today-${p.image}.webp" alt="${escape(p.preview)}" width="1280" height="1173" fetchpriority="high" /></picture></a><figcaption>${p.preview}</figcaption></figure>
     </section>
     <section id="features"><p class="section-label">DoneToday / ${p.nav}</p><h2>${p.features}</h2><div class="cards">${p.cards.map(([title, body], i) => `<article><span class="feature-icon">${icon(i)}</span><h3>${title}</h3><p>${body}</p></article>`).join('')}</div></section>
     <section id="how" class="steps"><div><p class="section-label">${l.how}</p><h2>${p.how}</h2><div class="sample-habits" aria-label="${l.sample}">${l.habits.map((habit, i) => `<div><span class="sample-icon" aria-hidden="true">${['◷', '◌', '↗'][i]}</span><span>${habit}</span><span class="habit-check ${i === 1 ? 'pending' : ''}" aria-hidden="true">${i === 1 ? '' : '✓'}</span></div>`).join('')}</div></div><ol>${p.steps.map((step, i) => `<li><span class="step-number" aria-hidden="true">0${i + 1}</span><p>${step}</p></li>`).join('')}</ol></section>
