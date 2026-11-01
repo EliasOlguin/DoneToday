@@ -58,7 +58,12 @@ public static class ApiSecurity
         context.Response.Headers["Referrer-Policy"] = "no-referrer";
         context.Response.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
         if (!development)
-            context.Response.Headers.ContentSecurityPolicy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self' https://accounts.google.com";
+        {
+            var landing = context.Request.Path.Value is "/" or "/index.html" or "/es/" or "/de/" or "/es/index.html" or "/de/index.html";
+            var googleScript = landing ? " https://www.googletagmanager.com" : "";
+            var googleAnalytics = landing ? " https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com" : "";
+            context.Response.Headers.ContentSecurityPolicy = $"default-src 'self'; script-src 'self'{googleScript}; style-src 'self' 'unsafe-inline'; img-src 'self' data:{googleAnalytics}; font-src 'self'; connect-src 'self'{googleAnalytics}; manifest-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self' https://accounts.google.com";
+        }
         if (IsApi(context)) context.Response.Headers.CacheControl = "no-store";
         if (context.Request.ContentLength > MaximumBodyBytes)
         {

@@ -9,6 +9,38 @@ namespace DoneToday.Tests.Services;
 
 public class SpaHostingTests
 {
+    [Theory]
+    [InlineData("/", true)]
+    [InlineData("/es/", true)]
+    [InlineData("/de/", true)]
+    [InlineData("/es/index.html", true)]
+    [InlineData("/today", false)]
+    [InlineData("/login", false)]
+    [InlineData("/api/me", false)]
+    [InlineData("/reset-password?token=private", false)]
+    public async Task AnalyticsCspOnlyAllowsGoogleOnPublicLandings(string path, bool analyticsAllowed)
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.Logging.ClearProviders();
+        builder.WebHost.UseUrls("http://127.0.0.1:0");
+        await using var app = builder.Build();
+        app.UseBrowserSecurity(development: false);
+        app.MapGet("/{**path}", () => "ok");
+        await app.StartAsync();
+        try
+        {
+            using var client = new HttpClient { BaseAddress = new Uri(app.Urls.Single()) };
+            using var response = await client.GetAsync(path);
+            var csp = response.Headers.GetValues("Content-Security-Policy").Single();
+            Assert.Equal(analyticsAllowed, csp.Contains("https://www.googletagmanager.com"));
+            Assert.Equal(analyticsAllowed, csp.Contains("https://*.google-analytics.com"));
+            Assert.Equal(analyticsAllowed, csp.Contains("https://*.analytics.google.com"));
+            Assert.DoesNotContain("'unsafe-eval'", csp);
+            Assert.DoesNotContain("script-src 'unsafe-inline'", csp);
+        }
+        finally { await app.StopAsync(); }
+    }
+
     [Fact]
     public async Task ProductionHttpPermanentlyRedirectsEvenWhenTheServerHasNoTlsListener()
     {

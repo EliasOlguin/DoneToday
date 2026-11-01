@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.5.0 — 2026-11-01
+
+- Add optional Google Analytics 4 on public landing pages in English, Spanish and German, measuring page views and clicks to open the app after consent. / Agrega Google Analytics 4 opcional en las portadas en inglés, español y alemán para medir visitas y clics de entrada a la app después de aceptar.
+- Add equally styled accept/reject controls and a footer preference button; keep analytics out of private app routes and strip URL queries and fragments from explicit events. / Agrega controles equivalentes para aceptar o rechazar y un botón de preferencias al pie; excluye las pantallas privadas y elimina consultas y fragmentos de las URLs de eventos explícitos.
+
 ## 1.4.1 — 2026-11-01
 
 - Permanently redirect production HTTP requests to HTTPS even when Docker only exposes an HTTP listener. / Redirige permanentemente HTTP a HTTPS en producción aunque Docker solo exponga un puerto HTTP.

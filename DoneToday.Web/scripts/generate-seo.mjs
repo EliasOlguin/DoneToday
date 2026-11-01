@@ -283,6 +283,7 @@ for (const [lang, p] of Object.entries(pages)) {
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="apple-touch-icon" href="/icons/apple-touch-180.png" />
   <script src="/landing-theme.js"></script>
+  <script src="/landing-analytics.js" defer></script>
   <link rel="stylesheet" href="/src/landing.css" />
 </head>
 <body itemscope itemtype="https://schema.org/WebSite" itemid="${origin}/#website">
@@ -313,7 +314,7 @@ for (const [lang, p] of Object.entries(pages)) {
     <section id="questions" class="faq"><div><p class="section-label">${l.faq}</p><h2>${p.faq}</h2><img class="faq-character" src="/brand/habit-0.svg" width="120" height="140" alt="" loading="lazy" /></div><div>${p.questions.map(([q, a]) => `<details><summary>${q}<span aria-hidden="true">+</span></summary><p>${a}</p></details>`).join('')}</div></section>
     <section class="closing"><img src="/brand/logo.svg" width="48" height="48" alt="" loading="lazy" /><div><h2>${l.bottom}</h2><p>${l.note}</p></div><a class="button" href="/login?lng=${lang}">${p.cta} <span aria-hidden="true">→</span></a></section>
   </main>
-  <footer class="wrap"><p>${escape(p.footer.replace('Elias Olguin', ''))}<a id="site-publisher" itemprop="publisher" itemscope itemtype="https://schema.org/Person" itemid="https://eliasolguin.dev/#person" href="https://eliasolguin.dev/" rel="author"><span itemprop="name">Elias Olguin</span><link itemprop="url" href="https://eliasolguin.dev/" /></a></p><a href="https://github.com/EliasOlguin/DoneToday">${p.source}</a></footer>
+  <footer class="wrap"><p>${escape(p.footer.replace('Elias Olguin', ''))}<a id="site-publisher" itemprop="publisher" itemscope itemtype="https://schema.org/Person" itemid="https://eliasolguin.dev/#person" href="https://eliasolguin.dev/" rel="author"><span itemprop="name">Elias Olguin</span><link itemprop="url" href="https://eliasolguin.dev/" /></a></p><button class="analytics-settings" type="button" data-analytics-settings hidden></button><a href="https://github.com/EliasOlguin/DoneToday">${p.source}</a></footer>
 </body>
 </html>
 `,
