@@ -109,7 +109,7 @@ test('manifest icons exist as PNGs with their declared installation dimensions',
     readFileSync(new URL('../public/manifest.json', import.meta.url)),
   )
   assert.equal(manifest.display, 'standalone')
-  assert.equal(manifest.start_url, '/')
+  assert.equal(manifest.start_url, '/today')
   for (const icon of manifest.icons) {
     const png = readFileSync(new URL('../public' + icon.src, import.meta.url))
     assert.equal(png.subarray(1, 4).toString(), 'PNG')

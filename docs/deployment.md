@@ -6,6 +6,8 @@ URL de producción: **https://donetoday.eliasolguin.dev**. Alojamiento: notebook
 
 ## Configuration / Configuración
 
+Public landing pages, indexing checks and Google Search Console setup: [SEO launch guide](seo-launch.md). Deploy the backend together with the complete frontend build: application routes now use `app.html`, while `index.html` is the public landing page.
+
 Supply settings privately through the service manager or an untracked environment file. Never commit credentials.
 
 | Variable | Value / Valor |

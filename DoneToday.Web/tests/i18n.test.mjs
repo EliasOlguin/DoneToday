@@ -20,6 +20,7 @@ const resources = Object.fromEntries(
 )
 const storage = new Map()
 globalThis.window = {
+  location: { search: '', hash: '' },
   localStorage: {
     getItem: (key) => storage.get(key) ?? null,
     setItem: (key, value) => storage.set(key, value),
@@ -27,7 +28,8 @@ globalThis.window = {
   },
 }
 
-async function detect(browserLanguages, saved) {
+async function detect(browserLanguages, saved, search = '') {
+  window.location.search = search;
   storage.clear()
   if (saved) storage.set('donetoday-language', saved)
   Object.defineProperty(globalThis, 'navigator', {
@@ -63,6 +65,12 @@ test('saved manual choice overrides browser preference and survives a new instan
 test('unsupported saved choice falls back to a compatible browser preference', async () => {
   const instance = await detect(['es-MX'], 'fr')
   assert.equal(instance.resolvedLanguage, 'es')
+})
+
+test('a landing page language takes precedence and is remembered', async () => {
+  const instance = await detect(['de-DE'], 'de', '?lng=es')
+  assert.equal(instance.resolvedLanguage, 'es')
+  assert.equal(storage.get('donetoday-language'), 'es')
 })
 test('all languages have complete nonempty catalogs and matching interpolation variables', () => {
   const en = resources.en.translation

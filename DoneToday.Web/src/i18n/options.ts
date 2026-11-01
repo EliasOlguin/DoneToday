@@ -9,7 +9,8 @@ export const languageOptions = {
   keySeparator: false as const,
   interpolation: { escapeValue: false },
   detection: {
-    order: ['localStorage', 'navigator'],
+    order: ['querystring', 'localStorage', 'navigator'],
+    lookupQuerystring: 'lng',
     lookupLocalStorage: 'donetoday-language',
     caches: ['localStorage'],
     convertDetectedLanguage: normalizeLanguage,

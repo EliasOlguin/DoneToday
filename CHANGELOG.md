@@ -1,6 +1,11 @@
 # Changelog
 
-## 1.2.3 — Unreleased / Sin publicar
+## 1.3.0 — 2026-11-01
+
+- Add static public landing pages in English, Spanish and German, canonical/hreflang metadata, social previews, a sitemap and robots.txt. Keep the application shell out of search and return HTTP 404 for unknown routes. / Agrega portadas públicas estáticas en inglés, español y alemán, metadatos canonical/hreflang, vistas previas al compartir, sitemap y robots.txt; excluye la app del índice y devuelve HTTP 404 en rutas inexistentes.
+- Match the public pages to DoneToday’s colors, panels, icons and habit characters, with real app screenshots and translated example habits in each language. / Adapta las portadas a los colores, paneles, iconos y personajes de DoneToday, con capturas reales y hábitos de ejemplo traducidos en cada idioma.
+
+## 1.2.3
 
 - Update the public URL and deployment guide for the notebook home server at https://donetoday.eliasolguin.dev. Archive the previous Render guide.
 - Update compatible frontend dependencies, .NET 10.0.14 packages/runtime, MailKit and Swashbuckle. Resolve the development-only minimatch advisory with a targeted 11.0.3 override; see [the dependency audit](docs/dependency-audit-2026-10-31.md).

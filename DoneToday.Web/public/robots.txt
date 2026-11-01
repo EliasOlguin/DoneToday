@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://donetoday.eliasolguin.dev/sitemap.xml

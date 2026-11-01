@@ -50,6 +50,8 @@ jobs:
         run: npm run lint
       - name: Build frontend
         run: npm run build
+      - name: Verify built public pages and SEO assets
+        run: npm run test:seo
       - name: Check translation catalogs
         run: npm run test:i18n
       - name: Run UI regression tests

@@ -3,7 +3,7 @@
   "name": "DoneToday",
   "short_name": "DoneToday",
   "description": "Small steps. Build habits and track your progress every day.",
-  "start_url": "/",
+  "start_url": "/today",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f7f7fc",
